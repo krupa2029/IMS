@@ -25,6 +25,27 @@ const bodyParser = require('body-parser');
 app.use(bodyParser.json({ limit: '50mb' })); // support parsing of application/json type post data
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true })); // support parsing of application/x-www-form-urlencoded post data
 
+/**
+ * Routes
+ */
+app.use('/inventory/', require('./routes/inventory.route'));
+
+/**
+ * Response Handling Middleware
+ */
+app.use(require('../../../commonLibrary/src/helpers/responseHandler.helper'));
+
+/**
+ * Joi Validation Error Handling Middleware
+ */
+app.use(
+  require('../../../commonLibrary/src/helpers/errorHandler.helper').handleJoiErrors
+);
+
+/**
+ * Error Handling Middleware
+ */
+app.use(require('../../../commonLibrary/src/helpers/errorHandler.helper').handleErrors);
 
 
 module.exports = app;
