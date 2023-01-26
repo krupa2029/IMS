@@ -29,6 +29,7 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true })); // support pa
  * Routes
  */
 app.use('/inventory/', require('./routes/inventory.route'));
+app.use('/inventory/location/', require('./routes/location.route'));
 
 /**
  * Response Handling Middleware
