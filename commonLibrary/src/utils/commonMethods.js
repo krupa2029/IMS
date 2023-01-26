@@ -1,7 +1,8 @@
-const { ObjectId } = require("mongodb")
+const { ObjectId } = require("mongodb");
 
 module.exports = {
-    convertToObjectId : (id) => {
-        return new ObjectId(`${id}`)
-    }
-}
+  convertToObjectId: (id) => {
+    const isValidId = ObjectId.isValid(id);
+    return isValidId ? new ObjectId(id) : id;
+  },
+};

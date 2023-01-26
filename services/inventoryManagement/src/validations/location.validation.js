@@ -8,9 +8,9 @@ const customJoi = Joi.defaults((schema) =>
 
 module.exports = {
   addEditLocation: customJoi.object({
-    locationId: Joi.string().required().allow(null),
+    id: Joi.string().required().allow(null),
     name: Joi.string().required(),
-    image: Joi.string().optional().allow(null),
+    image: Joi.string().required().allow(null),
     isDeleted: Joi.boolean().required(),
   }),
 };
