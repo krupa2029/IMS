@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express-joi-validation": "^5.0.1"
+    "express-joi-validation": "^5.0.1",
+    "mongodb": "^4.13.0"
   }
 }
