@@ -8,7 +8,7 @@ const router = express.Router();
 const userController = require("../controllers/user.controller");
 const userValidation = require("../validations/user.validation");
 
-router.get(
+router.post(
     '/add-edit',
     validator.body(userValidation.addEditUser),
     userController.addEditUser

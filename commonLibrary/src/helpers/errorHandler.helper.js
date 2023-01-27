@@ -3,7 +3,7 @@ const messages = require("../constants/messages");
 const { BadRequest, GeneralError } = require("../utils/generalError");
 
 const handleErrors = (err, req, res, next) => {
-  console.log('err', err);
+  console.log('Error', err);
     if (err instanceof GeneralError) {
       const errorData = err.data || null;
       return res
@@ -52,10 +52,7 @@ const handleErrors = (err, req, res, next) => {
   const catchAsyncError = (func) => (req, res, next) => {
     func(req, res, next)
       .catch((err) => {
-        if (process.env.NODE_ENV === 'dev') {
-          console.log('catchAsyncError : ', err);
-        }
-        next(err);
+        next(err)
       });
   };
 
