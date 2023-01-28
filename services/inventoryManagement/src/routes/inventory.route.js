@@ -10,6 +10,7 @@ const inventoryValidation = require("../validations/inventory.validation");
 
 router.get(
     '/add-edit',
+    validator.body(inventoryValidation.addEditInventory),
     inventoryController.addEditInventory
 );
 

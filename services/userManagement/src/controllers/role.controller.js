@@ -12,7 +12,7 @@ const messages = require("../constants/messages");
 
 module.exports = {
   addEditRole: catchAsyncError(async (req, res, next) => {
-    const { id, name, isDeleted } = req.body;
+    const { id, name, permissionIds, isDeleted } = req.body;
     const roleCollection = db.collection("roles");
     const roleId = id ? convertToObjectId(id) : null;
     let responseMessage;
@@ -33,7 +33,8 @@ module.exports = {
 
     const roleData = {
       name,
-      isDeleted
+      isDeleted,
+      permissionIds: permissionIds.map(id => convertToObjectId(id))
     };
 
     if (!roleId) {
@@ -42,7 +43,7 @@ module.exports = {
     } else if (roleId) {
       const filter = { _id: roleId };
       const updateDoc = {
-        $set: roleData,
+        $set: roleData
       };
       const response = await roleCollection.updateOne(filter, updateDoc);
       if (response.matchedCount === 0) {
