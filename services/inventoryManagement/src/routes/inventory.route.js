@@ -21,6 +21,12 @@ router.post(
 );
 
 router.post(
+  "/return",
+  validator.body(inventoryValidation.returnInventory),
+  inventoryController.returnInventory
+);
+
+router.post(
   "/list",
   validator.body(inventoryValidation.getInventoryList),
   inventoryController.getInventoryList

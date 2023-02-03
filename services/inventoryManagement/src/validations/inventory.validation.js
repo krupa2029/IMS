@@ -23,7 +23,7 @@ module.exports = {
     purchaseDate: Joi.date().format("DD-MM-YYYY").required(),
     modelNumber: Joi.string().required(),
     locationId: ObjectId().required(),
-    totalQuantity: Joi.number().integer().required(),
+    totalQuantity: Joi.number().integer().min(1).required(),
     canBeCheckedout: Joi.boolean().required(),
     isDeleted: Joi.boolean().required(),
   }),
@@ -37,15 +37,30 @@ module.exports = {
         INVENTORY_CATEGORY_CODE.EQUIPMENT
       ),
     expectedReturnDate: Joi.date().format("DD-MM-YYYY").required(),
-    checkoutQuantity: Joi.number().integer().required(),
-    notes: Joi.string().required().allow(null)
+    checkoutQuantity: Joi.number().integer().min(1).required(),
+    notes: Joi.string().required().allow(null),
+  }),
+
+  returnInventory: customJoi.object({
+    checkoutId: ObjectId().required(),
+    returnQuantity: Joi.number().integer().min(1).required(),
+    returnDate: Joi.date().format("DD-MM-YYYY").required(),
   }),
 
   getInventoryList: customJoi.object({
-    searchText: Joi.string().optional().allow(null),
-    pageIndex: Joi.number().required(),
-    pageSize: Joi.number().required(),
-    sortColumn: Joi.string().required(),
-    sortOrder: Joi.string().required(),
+    searchText: Joi.string().optional().allow(null, ""),
+    pageIndex: Joi.number().integer().required(),
+    pageSize: Joi.number().integer().required(),
+    sortField: Joi.string()
+      .required()
+      .valid(
+        "name",
+        "description",
+        "modelNumber",
+        "totalQuantity",
+        "availableQuantity",
+        "locationName"
+      ),
+    sortOrder: Joi.string().required().valid("asc", "desc"),
   }),
 };

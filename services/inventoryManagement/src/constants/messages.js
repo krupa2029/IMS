@@ -17,4 +17,12 @@ module.exports = {
   INVENTORY_ID_NOT_EXIST: "Inventory item with this id does not exist!",
   INVENTORY_NOT_AVAILABLE: "This item is currently unavailable!",
   INSUFFICIENT_INVENTORY: "Currently, There is only <n> items available in the stock!",
+
+  // Inventory Return 
+  INVENTORY_RETURN_SUCCESS: "Inventory item checkedout successfully",
+  CHECKOUT_ID_NOT_EXIST: "Checkout item with this id does not exist!",
+  RETURN_LIMIT: "Return quantity can not exceed checkedout quantity. You have checkedout <n> items only!",
+
+  // Inventory List
+  INVENTORY_LIST_SUCCESS: "Record list get successfully"
 };

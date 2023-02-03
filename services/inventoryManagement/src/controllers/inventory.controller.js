@@ -128,8 +128,10 @@ module.exports = {
       toolType === INVENTORY_CATEGORY_CODE.MATERIAL ? "materials" : "equipment";
     const inventoryCollection = db.collection(collectionName);
     const inventoryCheckoutCollection = db.collection("inventory-checkout");
-    const checkoutDateUtc = getDateUTC(null, "DD-MM-YYYY");
-    const expectedReturnDateUtc = getDateUTC(expectedReturnDate, "DD-MM-YYYY");
+    const checkoutDateUtc = new Date(getDateUTC(null, "DD-MM-YYYY"));
+    const expectedReturnDateUtc = new Date(
+      getDateUTC(expectedReturnDate, "DD-MM-YYYY")
+    );
     const inventoryId = convertToObjectId(toolId);
 
     const tool = await inventoryCollection.findOne({
@@ -200,10 +202,6 @@ module.exports = {
         { _id: inventoryId },
         {
           $inc: { availableQuantity: -checkoutQuantity },
-          $set: {
-            canBeCheckedout:
-              tool.availableQuantity === checkoutQuantity ? false : true,
-          },
         }
       );
 
@@ -222,33 +220,173 @@ module.exports = {
     );
   }),
 
-  getInventoryList: catchAsyncError(async (req, res, next) => {
-    const { searchText, pageIndex, pageSize, sortColumn, sortOrder } = req.body;
+  returnInventory: catchAsyncError(async (req, res, next) => {
+    const { checkoutId, returnQuantity, returnDate } = req.body;
+    const userId = "63d448b12fabf68afff8a80e";
+    const returnDateUtc = new Date(getDateUTC(returnDate, "DD-MM-YYYY"));
+    const inventoryReturnCollection = db.collection("inventory-return");
+    const inventoryCheckoutCollection = db.collection("inventory-checkout");
 
-    const materialCollection = db.collection("materials");
-    const equipmentCollection = db.collection("equipment");
+    const checkoutDetails = await inventoryCheckoutCollection.findOne({
+      _id: checkoutId,
+    });
 
-    const pipeline = [
-      {
-        $facet: {
-          materialCollection: [{ $match: {} }],
-          equipmentCollection: [{ $match: {} }],
-        },
-      },
-      {
-        $project: {
-          data: {
-            $concatArrays: ["$materialCollection", "$equipmentCollection"],
+    if (checkoutDetails) {
+      if (returnQuantity > checkoutDetails.checkoutQuantity) {
+        const ERR_MSG =
+          checkoutDetails.checkoutQuantity > 1
+            ? messages.RETURN_LIMIT.replace(
+                /<n>/,
+                checkoutDetails.checkoutQuantity
+              )
+            : messages.RETURN_LIMIT.replace(
+                /<n>/,
+                checkoutDetails.checkoutQuantity
+              ).replace(/items/, "item");
+        return next(
+          new GeneralResponse(ERR_MSG, httpStatusCode.HTTP_BAD_REQUEST)
+        );
+      }
+
+      await inventoryReturnCollection.insertOne({
+        checkoutId,
+        userId,
+        returnQuantity,
+        returnDate: returnDateUtc,
+      });
+
+      await inventoryCheckoutCollection.updateOne(
+        { _id: checkoutId },
+        {
+          $inc: { checkoutQuantity: -returnQuantity },
+          $set: {
+            isReturned:
+              returnQuantity === checkoutDetails.checkoutQuantity
+                ? true
+                : false,
           },
-        },
-      },
-      {
-        $sort: { "data.name": 1 },
-      },
-    ];
+        }
+      );
+      const collectionName =
+        checkoutDetails.toolType === INVENTORY_CATEGORY_CODE.MATERIAL
+          ? "materials"
+          : "equipment";
+      const inventoryCollection = db.collection(collectionName);
+
+      await inventoryCollection.updateOne(
+        { _id: checkoutDetails.toolId },
+        {
+          $inc: { availableQuantity: returnQuantity },
+        }
+      );
+    }
 
     return next(
-      new GeneralResponse(responseMessage, httpStatusCode.HTTP_SUCCESS)
+      new GeneralResponse(
+        messages.CHECKOUT_ID_NOT_EXIST,
+        httpStatusCode.HTTP_BAD_REQUEST
+      )
+    );
+  }),
+
+  getInventoryList: catchAsyncError(async (req, res, next) => {
+    const { searchText, pageIndex, pageSize, sortField, sortOrder } = req.body;
+    let sortBy = sortField;
+    if (sortBy === "locationName") {
+      sortBy = "locationData.name";
+    }
+
+    const responseData = await db
+      .collection("materials")
+      .aggregate([
+        { $unionWith: { coll: "equipment" } },
+        {
+          $lookup: {
+            from: "locations",
+            localField: "locationId",
+            foreignField: "_id",
+            as: "locationData",
+          },
+        },
+        {
+          $match: {
+            $or: [
+              { name: { $regex: searchText, $options: "i" } },
+              { description: { $regex: searchText, $options: "i" } },
+              { modelNumber: { $regex: searchText, $options: "i" } },
+              { totalQuantity: { $regex: searchText, $options: "i" } },
+              { availableQuantity: { $regex: searchText, $options: "i" } },
+              { "locationData.name": { $regex: searchText, $options: "i" } },
+            ],
+            $and: [{ isDeleted: false }],
+          },
+        },
+        {
+          $sort: { [sortField]: sortOrder === "asc" ? 1 : -1 },
+        },
+        // {
+        //   $skip: (pageIndex - 1) * pageSize,
+        // },
+        // {
+        //   $limit: pageSize,
+        // },
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            image: 1,
+            description: 1,
+            modelNumber: 1,
+            totalQuantity: 1,
+            availableQuantity: 1,
+            purchaseDate: 1,
+            canBeCheckedout: 1,
+            isDeleted: 1,
+            locationData: {
+              $arrayElemAt: [
+                {
+                  $map: {
+                    input: "$locationData",
+                    as: "ld",
+                    in: {
+                      _id: "$$ld._id",
+                      name: "$$ld.name",
+                    },
+                  },
+                },
+                0,
+              ],
+            },
+          },
+        },
+        {
+          $facet: {
+            paginatedResults: [
+              { $skip: (pageIndex - 1) * pageSize },
+              { $limit: pageSize },
+            ],
+            totalCount: [
+              {
+                $count: "count",
+              },
+            ],
+          },
+        },
+        
+      ])
+      .toArray();
+
+    const data = {
+      inventoryList: responseData[0]?.paginatedResults,
+      totalRecords: responseData[0]?.totalCount[0]?.count,
+    };
+    
+    return next(
+      new GeneralResponse(
+        messages.INVENTORY_LIST_SUCCESS,
+        httpStatusCode.HTTP_SUCCESS,
+        data
+      )
     );
   }),
 };
