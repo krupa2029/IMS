@@ -16,6 +16,8 @@ module.exports = {
     UPDATE_USER_SUCCESS : 'User updated successfully',
     USER_ALREADY_EXIST  : 'User with this email already exist!',
     USER_ID_NOT_EXIST   : 'User with this id does not exist!',
+    USER_EMAIL_NOT_EXIST   : 'User with this email does not exist!',
+    USER_LOGIN_SUCCESS   : 'User logged in successfully'
 
   };
   

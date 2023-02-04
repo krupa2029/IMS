@@ -324,12 +324,6 @@ module.exports = {
         {
           $sort: { [sortField]: sortOrder === "asc" ? 1 : -1 },
         },
-        // {
-        //   $skip: (pageIndex - 1) * pageSize,
-        // },
-        // {
-        //   $limit: pageSize,
-        // },
         {
           $project: {
             _id: 1,
@@ -367,7 +361,7 @@ module.exports = {
             ],
             totalCount: [
               {
-                $count: "count",
+                $count: "count"
               },
             ],
           },
@@ -380,7 +374,7 @@ module.exports = {
       inventoryList: responseData[0]?.paginatedResults,
       totalRecords: responseData[0]?.totalCount[0]?.count,
     };
-    
+
     return next(
       new GeneralResponse(
         messages.INVENTORY_LIST_SUCCESS,
@@ -389,4 +383,5 @@ module.exports = {
       )
     );
   }),
+  
 };

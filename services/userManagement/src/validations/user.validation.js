@@ -15,4 +15,8 @@ module.exports = {
     address: Joi.string().required(),
     roleId: ObjectId().required()
   }),
+
+  userLogin: customJoi.object({
+    email: Joi.string().email().required()
+  }),
 }
