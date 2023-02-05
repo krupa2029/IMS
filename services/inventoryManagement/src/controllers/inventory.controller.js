@@ -1,6 +1,8 @@
 const httpStatusCode = require("../../../../commonLibrary/src/constants/httpStatusCode");
 const {
   getDateUTC,
+  addDayInDate,
+  isDate,
 } = require("../../../../commonLibrary/src/helpers/dateTime.helper");
 const {
   catchAsyncError,
@@ -35,20 +37,6 @@ module.exports = {
     const inventoryCollection = db.collection(collectionName);
     const inventoryId = id ? convertToObjectId(id) : null;
     let responseMessage;
-
-    const inventoryExist = await inventoryCollection.countDocuments({
-      modelNumber: { $regex: modelNumber, $options: "i" },
-      _id: { $ne: inventoryId },
-    });
-
-    if (inventoryExist > 0) {
-      return next(
-        new GeneralResponse(
-          messages.INVENTORY_ALREADY_EXIST,
-          httpStatusCode.HTTP_BAD_REQUEST
-        )
-      );
-    }
 
     const inventoryData = {
       name,
@@ -123,15 +111,14 @@ module.exports = {
   checkoutInventory: catchAsyncError(async (req, res, next) => {
     const { toolId, toolType, expectedReturnDate, checkoutQuantity, notes } =
       req.body;
-    const userId = "63d448b12fabf68afff8a80e";
+    const userId = convertToObjectId(req.token.userId);
     const collectionName =
       toolType === INVENTORY_CATEGORY_CODE.MATERIAL ? "materials" : "equipment";
     const inventoryCollection = db.collection(collectionName);
     const inventoryCheckoutCollection = db.collection("inventory-checkout");
-    const checkoutDateUtc = new Date(getDateUTC(null, "DD-MM-YYYY"));
-    const expectedReturnDateUtc = new Date(
-      getDateUTC(expectedReturnDate, "DD-MM-YYYY")
-    );
+    const checkoutDateUtc = getDateUTC();
+    const currentDate = getDateUTC(null, "YYYY-MM-DD");
+    const expectedReturnDateUtc = getDateUTC(expectedReturnDate);
     const inventoryId = convertToObjectId(toolId);
 
     const tool = await inventoryCollection.findOne({
@@ -170,7 +157,7 @@ module.exports = {
         toolId: inventoryId,
         toolType,
         userId,
-        checkoutDate: checkoutDateUtc,
+        checkoutDate: { $gte: currentDate, $lt: addDayInDate(currentDate, 1) },
       });
 
       if (checkoutExist) {
@@ -222,13 +209,14 @@ module.exports = {
 
   returnInventory: catchAsyncError(async (req, res, next) => {
     const { checkoutId, returnQuantity, returnDate } = req.body;
-    const userId = "63d448b12fabf68afff8a80e";
-    const returnDateUtc = new Date(getDateUTC(returnDate, "DD-MM-YYYY"));
+    const userId = convertToObjectId(req.token.userId);
+    const returnDateUtc = getDateUTC(returnDate);
     const inventoryReturnCollection = db.collection("inventory-return");
     const inventoryCheckoutCollection = db.collection("inventory-checkout");
+    const checkoutObjectId = convertToObjectId(checkoutId);
 
     const checkoutDetails = await inventoryCheckoutCollection.findOne({
-      _id: checkoutId,
+      _id: checkoutObjectId,
     });
 
     if (checkoutDetails) {
@@ -243,20 +231,21 @@ module.exports = {
                 /<n>/,
                 checkoutDetails.checkoutQuantity
               ).replace(/items/, "item");
+
         return next(
           new GeneralResponse(ERR_MSG, httpStatusCode.HTTP_BAD_REQUEST)
         );
       }
 
       await inventoryReturnCollection.insertOne({
-        checkoutId,
+        checkoutId: checkoutObjectId,
         userId,
         returnQuantity,
         returnDate: returnDateUtc,
       });
 
       await inventoryCheckoutCollection.updateOne(
-        { _id: checkoutId },
+        { _id: checkoutObjectId },
         {
           $inc: { checkoutQuantity: -returnQuantity },
           $set: {
@@ -278,6 +267,13 @@ module.exports = {
         {
           $inc: { availableQuantity: returnQuantity },
         }
+      );
+
+      return next(
+        new GeneralResponse(
+          messages.INVENTORY_RETURN_SUCCESS,
+          httpStatusCode.HTTP_SUCCESS
+        )
       );
     }
 
@@ -322,7 +318,7 @@ module.exports = {
           },
         },
         {
-          $sort: { [sortField]: sortOrder === "asc" ? 1 : -1 },
+          $sort: { [sortBy]: sortOrder === "asc" ? 1 : -1 },
         },
         {
           $project: {
@@ -361,12 +357,11 @@ module.exports = {
             ],
             totalCount: [
               {
-                $count: "count"
+                $count: "count",
               },
             ],
           },
         },
-        
       ])
       .toArray();
 
@@ -383,5 +378,326 @@ module.exports = {
       )
     );
   }),
-  
+
+  getCheckoutList: catchAsyncError(async (req, res, next) => {
+    const { pageIndex, pageSize, sortField, sortOrder, userId } = req.body;
+    let { searchText } = req.body;
+    let sortBy = "returnData.returnDate";
+    let searchCategory;
+    let searchQuantity;
+    let startDate;
+
+    switch (sortField) {
+      case "toolName":
+        sortBy = "toolData.name";
+        break;
+      case "modelNumber":
+        sortBy = "toolData.modelNumber";
+        break;
+      case "quantity":
+        sortBy = "returnData.returnQuantity";
+        break;
+      case "category":
+        sortBy = "toolType";
+        break;
+      case "checkoutDate":
+        sortBy = "checkoutDate";
+        break;
+      case "returnDate":
+        sortBy = "returnData.returnDate";
+        break;
+      default:
+        sortBy = "returnData.returnDate";
+    }
+
+    if (searchText?.toLowerCase() === "equipment") {
+      searchCategory = "E";
+    } else if (searchText?.toLowerCase() === "material") {
+      searchCategory = "M";
+    } else if (!isNaN(searchText)) {
+      searchQuantity = parseInt(searchText);
+      searchText = "";
+    } else if (isDate(searchText)) {
+      startDate = getDateUTC(searchText);
+      searchText = "";
+    }
+
+    const pipeline1 = [
+      {
+        $match: { isReturned: false },
+      },
+    ];
+
+    const pipeline2 = [
+      {
+        $lookup: {
+          from: "inventory-return",
+          localField: "_id",
+          foreignField: "checkoutId",
+          as: "returnData",
+        },
+      },
+      {
+        $unwind: {
+          path: "$returnData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "returnData.userId",
+          foreignField: "_id",
+          as: "returnBy",
+        },
+      },
+      {
+        $unwind: {
+          path: "$returnBy",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    ];
+
+    const responseData = await db
+      .collection("inventory-checkout")
+      .aggregate([
+        {
+          $facet: {
+            pipeline1Results: pipeline1,
+            pipeline2Results: pipeline2,
+          },
+        },
+        {
+          $project: {
+            results: {
+              $concatArrays: ["$pipeline1Results", "$pipeline2Results"],
+            },
+          },
+        },
+        {
+          $unwind: {
+            path: "$results",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $replaceRoot: {
+            newRoot: "$results",
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "checkoutBy",
+          },
+        },
+        {
+          $unwind: {
+            path: "$checkoutBy",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: "materials",
+            localField: "toolId",
+            foreignField: "_id",
+            as: "materialToolDetails",
+          },
+        },
+        {
+          $lookup: {
+            from: "equipment",
+            localField: "toolId",
+            foreignField: "_id",
+            as: "equipmentToolDetails",
+          },
+        },
+        {
+          $addFields: {
+            toolData: {
+              $cond: [
+                { $eq: ["$toolType", "M"] },
+                "$materialToolDetails",
+                "$equipmentToolDetails",
+              ],
+            },
+          },
+        },
+        {
+          $unwind: {
+            path: "$toolData",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $addFields: {
+            quantity: {
+              $ifNull: ["$returnData.returnQuantity", "$checkoutQuantity"],
+            },
+          },
+        },
+        {
+          $match: {
+            $and: [
+              userId
+                ? {
+                    "checkoutBy._id": convertToObjectId(userId),
+                  }
+                : {},
+              {
+                $or: [
+                  searchText !== ""
+                    ? {
+                        "checkoutBy.firstName": {
+                          $regex: searchText,
+                          $options: "i",
+                        },
+                      }
+                    : undefined,
+                  searchText !== ""
+                    ? {
+                        "checkoutBy.lastName": {
+                          $regex: searchText,
+                          $options: "i",
+                        },
+                      }
+                    : undefined,
+                  searchText !== ""
+                    ? {
+                        "returnBy.firstName": {
+                          $regex: searchText,
+                          $options: "i",
+                        },
+                      }
+                    : undefined,
+                  searchText !== ""
+                    ? {
+                        "returnBy.lastName": {
+                          $regex: searchText,
+                          $options: "i",
+                        },
+                      }
+                    : undefined,
+                  searchText !== ""
+                    ? {
+                        "toolData.modelNumber": {
+                          $regex: searchText,
+                          $options: "i",
+                        },
+                      }
+                    : undefined,
+                  searchText !== ""
+                    ? { "toolData.name": { $regex: searchText, $options: "i" } }
+                    : undefined,
+                  searchQuantity !== undefined
+                    ? { quantity: searchQuantity }
+                    : undefined,
+                  searchCategory !== undefined
+                    ? { toolType: searchCategory }
+                    : undefined,
+                  startDate !== undefined
+                    ? {
+                        checkoutDate: {
+                          $gte: startDate,
+                          $lt: addDayInDate(startDate, 1),
+                        },
+                      }
+                    : undefined,
+                  startDate !== undefined
+                    ? {
+                        "returnData.returnDate": {
+                          $gte: startDate,
+                          $lt: addDayInDate(startDate, 1),
+                        },
+                      }
+                    : undefined,
+                    { "_id": { $exists: true } },
+                ].filter((x) => x !== undefined),
+              },
+              { "_id": { $exists: true } },
+            ],
+          },
+        },
+        {
+          $sort: { [sortBy]: sortOrder === "asc" ? 1 : -1 },
+        },
+        {
+          $project: {
+            _id: 0,
+            checkoutId: "$_id",
+            checkoutDate: "$checkoutDate",
+            checkoutQuantity: "$checkoutQuantity",
+            isReturned: "$isReturned",
+            expectedReturnDate: "$expectedReturnDate",
+            userId: "$checkoutBy._id",
+            userName: {
+              $concat: ["$checkoutBy.firstName", " ", "$checkoutBy.lastName"],
+            },
+            toolDetails: {
+              _id: "$toolData._id",
+              name: "$toolData.name",
+              image: "$toolData.image",
+              type: "$toolType",
+              modelNumber: "$toolData.modelNumber",
+            },
+            quantity: "$quantity",
+            returnDetails: {
+              $ifNull: [
+                {
+                  $cond: [
+                    { $ifNull: ["$returnData._id", false] },
+                    {
+                      _id: "$returnData._id",
+                      returnQuantity: "$returnData.returnQuantity",
+                      returnDate: "$returnData.returnDate",
+                      userId: "$returnBy._id",
+                      userName: {
+                        $concat: [
+                          "$returnBy.firstName",
+                          " ",
+                          "$returnBy.lastName",
+                        ],
+                      },
+                    },
+                    null,
+                  ],
+                },
+                null,
+              ],
+            },
+          },
+        },
+        {
+          $facet: {
+            paginatedResults: [
+              { $skip: (pageIndex - 1) * pageSize },
+              { $limit: pageSize },
+            ],
+            totalCount: [
+              {
+                $count: "count",
+              },
+            ],
+          },
+        },
+      ])
+      .toArray();
+
+    const data = {
+      recordList: responseData[0]?.paginatedResults,
+      totalRecords: responseData[0]?.totalCount[0]?.count,
+    };
+
+    return next(
+      new GeneralResponse(
+        messages.INVENTORY_LIST_SUCCESS,
+        httpStatusCode.HTTP_SUCCESS,
+        data
+      )
+    );
+  }),
 };

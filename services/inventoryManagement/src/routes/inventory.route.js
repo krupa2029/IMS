@@ -37,11 +37,11 @@ router.post(
   inventoryController.getInventoryList
 );
 
-// router.post(
-//   "/checkout-list",
-//   validator.body(inventoryValidation.getCheckoutList),
-//   authenticate,
-//   inventoryController.getCheckoutList
-// );
+router.post(
+  "/checkout-list",
+  validator.body(inventoryValidation.getCheckoutList),
+  authenticate,
+  inventoryController.getCheckoutList
+);
 
 module.exports = router;

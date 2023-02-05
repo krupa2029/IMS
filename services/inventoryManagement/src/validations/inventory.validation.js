@@ -48,7 +48,7 @@ module.exports = {
   }),
 
   getInventoryList: customJoi.object({
-    searchText: Joi.string().optional().allow(null, ""),
+    searchText: Joi.string().required().allow(""),
     pageIndex: Joi.number().integer().required(),
     pageSize: Joi.number().integer().required(),
     sortField: Joi.string()
@@ -60,6 +60,24 @@ module.exports = {
         "totalQuantity",
         "availableQuantity",
         "locationName"
+      ),
+    sortOrder: Joi.string().required().valid("asc", "desc"),
+  }),
+
+  getCheckoutList: customJoi.object({
+    searchText: Joi.string().required().allow(""),
+    userId: ObjectId().optional().allow(null),
+    pageIndex: Joi.number().integer().required(),
+    pageSize: Joi.number().integer().required(),
+    sortField: Joi.string()
+      .required()
+      .valid(
+        "toolName",
+        "modelNumber",
+        "quantity",
+        "category",
+        "checkoutDate",
+        "returnDate",
       ),
     sortOrder: Joi.string().required().valid("asc", "desc"),
   }),
