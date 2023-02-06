@@ -58,6 +58,8 @@ module.exports = {
         "description",
         "modelNumber",
         "totalQuantity",
+        "category",
+        "purchaseDate",
         "availableQuantity",
         "locationName"
       ),

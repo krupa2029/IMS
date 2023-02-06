@@ -65,15 +65,15 @@ module.exports = {
       if (availableQuantity < 0) {
         ERR_MSG = messages.QUANTITY_DECREASE_LIMIT.replace(
           /<n1>/,
-          -quantityDiff
+          Math.abs(quantityDiff)
         );
         ERR_MSG =
           inventory.availableQuantity > 1
-            ? messages.QUANTITY_DECREASE_LIMIT.replace(
+            ? ERR_MSG.replace(
                 /<n2>/,
                 inventory.availableQuantity
               )
-            : messages.QUANTITY_DECREASE_LIMIT.replace(
+            : ERR_MSG.replace(
                 /<n2>/,
                 inventory.availableQuantity
               ).replace(/items are/, "item is");
@@ -287,15 +287,43 @@ module.exports = {
 
   getInventoryList: catchAsyncError(async (req, res, next) => {
     const { searchText, pageIndex, pageSize, sortField, sortOrder } = req.body;
+    let searchString = searchText;
     let sortBy = sortField;
+    let searchQuantity;
+    let startDate;
+
     if (sortBy === "locationName") {
       sortBy = "locationData.name";
+    }
+
+    if (!isNaN(searchString)) {
+      searchQuantity = parseInt(searchString);
+      searchString = "";
+    } else if (isDate(searchString)) {
+      startDate = getDateUTC(searchString);
+      searchString = "";
     }
 
     const responseData = await db
       .collection("materials")
       .aggregate([
+        {
+          $addFields: {
+            source: "materials",
+          },
+        },
         { $unionWith: { coll: "equipment" } },
+        {
+          $addFields: {
+            category: {
+              $cond: [
+                { $eq: ["$source", "materials"] },
+                "material",
+                "equipment",
+              ],
+            },
+          },
+        },
         {
           $lookup: {
             from: "locations",
@@ -306,15 +334,62 @@ module.exports = {
         },
         {
           $match: {
-            $or: [
-              { name: { $regex: searchText, $options: "i" } },
-              { description: { $regex: searchText, $options: "i" } },
-              { modelNumber: { $regex: searchText, $options: "i" } },
-              { totalQuantity: { $regex: searchText, $options: "i" } },
-              { availableQuantity: { $regex: searchText, $options: "i" } },
-              { "locationData.name": { $regex: searchText, $options: "i" } },
-            ],
-            $and: [{ isDeleted: false }],
+            $and: [
+              searchText !== ""
+                ? {
+                    $or: [
+                      searchString !== ""
+                        ? {
+                            $or: [
+                              { name: { $regex: searchString, $options: "i" } },
+                              {
+                                description: {
+                                  $regex: searchString,
+                                  $options: "i",
+                                },
+                              },
+                              {
+                                modelNumber: {
+                                  $regex: searchString,
+                                  $options: "i",
+                                },
+                              },
+                              {
+                                "locationData.name": {
+                                  $regex: searchString,
+                                  $options: "i",
+                                },
+                              },
+                              {
+                                category: {
+                                  $regex: searchString,
+                                  $options: "i",
+                                },
+                              },
+                            ],
+                          }
+                        : undefined,
+                      searchQuantity !== undefined
+                        ? {
+                            $or: [
+                              { totalQuantity: searchQuantity },
+                              { availableQuantity: searchQuantity },
+                            ],
+                          }
+                        : undefined,
+                      startDate !== undefined
+                        ? {
+                            purchaseDate: {
+                              $gte: startDate,
+                              $lt: addDayInDate(startDate, 1),
+                            },
+                          }
+                        : undefined,
+                    ].filter((x) => x !== undefined),
+                  }
+                : undefined,
+              { $and: [{ isDeleted: false }] },
+            ].filter((x) => x !== undefined),
           },
         },
         {
@@ -324,6 +399,7 @@ module.exports = {
           $project: {
             _id: 1,
             name: 1,
+            category: 1,
             image: 1,
             description: 1,
             modelNumber: 1,
@@ -380,8 +456,9 @@ module.exports = {
   }),
 
   getCheckoutList: catchAsyncError(async (req, res, next) => {
-    const { pageIndex, pageSize, sortField, sortOrder, userId } = req.body;
-    let { searchText } = req.body;
+    const { searchText, pageIndex, pageSize, sortField, sortOrder, userId } =
+      req.body;
+    let searchString = searchText;
     let sortBy = "returnData.returnDate";
     let searchCategory;
     let searchQuantity;
@@ -410,16 +487,16 @@ module.exports = {
         sortBy = "returnData.returnDate";
     }
 
-    if (searchText?.toLowerCase() === "equipment") {
+    if (searchString?.toLowerCase() === "equipment") {
       searchCategory = "E";
-    } else if (searchText?.toLowerCase() === "material") {
+    } else if (searchString?.toLowerCase() === "material") {
       searchCategory = "M";
-    } else if (!isNaN(searchText)) {
-      searchQuantity = parseInt(searchText);
-      searchText = "";
-    } else if (isDate(searchText)) {
-      startDate = getDateUTC(searchText);
-      searchText = "";
+    } else if (!isNaN(searchString)) {
+      searchQuantity = parseInt(searchString);
+      searchString = "";
+    } else if (isDate(searchString)) {
+      startDate = getDateUTC(searchString);
+      searchString = "";
     }
 
     const pipeline1 = [
@@ -548,78 +625,84 @@ module.exports = {
                     "checkoutBy._id": convertToObjectId(userId),
                   }
                 : {},
-              {
-                $or: [
-                  searchText !== ""
-                    ? {
-                        "checkoutBy.firstName": {
-                          $regex: searchText,
-                          $options: "i",
-                        },
-                      }
-                    : undefined,
-                  searchText !== ""
-                    ? {
-                        "checkoutBy.lastName": {
-                          $regex: searchText,
-                          $options: "i",
-                        },
-                      }
-                    : undefined,
-                  searchText !== ""
-                    ? {
-                        "returnBy.firstName": {
-                          $regex: searchText,
-                          $options: "i",
-                        },
-                      }
-                    : undefined,
-                  searchText !== ""
-                    ? {
-                        "returnBy.lastName": {
-                          $regex: searchText,
-                          $options: "i",
-                        },
-                      }
-                    : undefined,
-                  searchText !== ""
-                    ? {
-                        "toolData.modelNumber": {
-                          $regex: searchText,
-                          $options: "i",
-                        },
-                      }
-                    : undefined,
-                  searchText !== ""
-                    ? { "toolData.name": { $regex: searchText, $options: "i" } }
-                    : undefined,
-                  searchQuantity !== undefined
-                    ? { quantity: searchQuantity }
-                    : undefined,
-                  searchCategory !== undefined
-                    ? { toolType: searchCategory }
-                    : undefined,
-                  startDate !== undefined
-                    ? {
-                        checkoutDate: {
-                          $gte: startDate,
-                          $lt: addDayInDate(startDate, 1),
-                        },
-                      }
-                    : undefined,
-                  startDate !== undefined
-                    ? {
-                        "returnData.returnDate": {
-                          $gte: startDate,
-                          $lt: addDayInDate(startDate, 1),
-                        },
-                      }
-                    : undefined,
-                    { "_id": { $exists: true } },
-                ].filter((x) => x !== undefined),
-              },
-              { "_id": { $exists: true } },
-            ],
+              searchText !== ""
+                ? {
+                    $or: [
+                      searchString !== ""
+                        ? {
+                            $or: [
+                              {
+                                "checkoutBy.firstName": {
+                                  $regex: searchString,
+                                  $options: "i",
+                                },
+                              },
+                              {
+                                "checkoutBy.lastName": {
+                                  $regex: searchString,
+                                  $options: "i",
+                                },
+                              },
+                              {
+                                "returnBy.firstName": {
+                                  $regex: searchString,
+                                  $options: "i",
+                                },
+                              },
+                              {
+                                "returnBy.firstName": {
+                                  $regex: searchString,
+                                  $options: "i",
+                                },
+                              },
+                              {
+                                "returnBy.lastName": {
+                                  $regex: searchString,
+                                  $options: "i",
+                                },
+                              },
+                              {
+                                "toolData.modelNumber": {
+                                  $regex: searchString,
+                                  $options: "i",
+                                },
+                              },
+                              {
+                                "toolData.name": {
+                                  $regex: searchString,
+                                  $options: "i",
+                                },
+                              },
+                            ],
+                          }
+                        : undefined,
+
+                      searchQuantity !== undefined
+                        ? { quantity: searchQuantity }
+                        : undefined,
+                      searchCategory !== undefined
+                        ? { toolType: searchCategory }
+                        : undefined,
+                      startDate !== undefined
+                        ? {
+                            checkoutDate: {
+                              $gte: startDate,
+                              $lt: addDayInDate(startDate, 1),
+                            },
+                          }
+                        : undefined,
+                      startDate !== undefined
+                        ? {
+                            "returnData.returnDate": {
+                              $gte: startDate,
+                              $lt: addDayInDate(startDate, 1),
+                            },
+                          }
+                        : undefined,
+                    ].filter((x) => x !== undefined),
+                  }
+                : undefined,
+            ].filter((x) => x !== undefined),
           },
         },
         {

@@ -10,7 +10,7 @@ module.exports = {
   UPDATE_INVENTORY_SUCCESS: "Inventory item updated successfully",
   INVENTORY_ALREADY_EXIST: "Inventory item with this model number already exist!",
   INVENTORY_ID_NOT_EXIST: "Inventory item with this id does not exist!",
-  QUANTITY_DECREASE_LIMIT: "Can not decrease quantity by <n1> as there is only <n2> items are available in the stock!",
+  QUANTITY_DECREASE_LIMIT: "Can not decrease quantity by <n1> as there is <n2> items are available in the stock!",
 
   // Inventory Checkout
   INVENTORY_CHECKOUT_SUCCESS: "Inventory item checkedout successfully",
