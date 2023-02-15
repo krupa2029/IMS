@@ -1,22 +1,25 @@
-import React from "react";
+import React, { useContext } from "react";
 import Layout from "./layout/Layout";
 import Dashboard from "./pages/Dashboard";
 import CheckoutReport from "./pages/CheckoutReport";
 import LoginPage from "./pages/LoginPage";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
+import AuthContext from "./store/auth-context";
+
 
 function App() {
+  const authCtx = useContext(AuthContext);
   const router = createBrowserRouter([
     {
       path: "/login",
       element: <LoginPage />,
     },
     {
-      element: <Layout />,
+      element: authCtx.isLoggedIn ? <Layout /> : <Navigate to="/login" />,
       children: [
         {
           path: "/",
-          element: <Dashboard />,
+          element: <Navigate to="/dashboard" />
         },
         {
           path: "/dashboard",

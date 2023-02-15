@@ -1,46 +1,124 @@
-import React from "react";
+import React, { Fragment, useContext, useRef, useState } from "react";
 import { Button } from "primereact/button";
+import { useNavigate } from "react-router-dom";
 import { InputText } from "primereact/inputtext";
-import { useLocation } from "react-router";
+import AuthContext from "../store/auth-context";
+import { login } from "../api";
+import { Toast } from "primereact/toast";
+import { useForm } from "react-hook-form";
+import { joiResolver } from "@hookform/resolvers/joi";
+import Joi from "joi";
+
+const fieldValidationSchema = Joi.object({
+  email: Joi.string()
+    .email({ tlds: { allow: false } })
+    .required()
+    .messages({
+      "string.empty": `Email is required!`,
+      "string.email": `Please provide valid email!`,
+    }),
+});
 
 const LoginPage = () => {
-  const router = useLocation();
+  const navigate = useNavigate();
+  const authCtx = useContext(AuthContext);
+  const toast = useRef(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: joiResolver(fieldValidationSchema),
+  });
+
+  const onSubmitHandler = (data) => {
+    setIsLoading(true);
+
+    login({
+      email: data.email,
+    })
+      .then((responseData) => {
+        setIsLoading(false);
+        if (responseData.data.httpStatus === 200) {
+          if (responseData?.data?.data) {
+            authCtx.login(responseData?.data?.data);
+          }
+
+          // toast.current.show({
+          //   severity: "success",
+          //   summary: responseData?.data?.message,
+          //   life: 3000,
+          // });
+          navigate("/dashboard");
+        } else {
+          toast.current.show({
+            severity: "error",
+            summary: responseData?.data?.message,
+            life: 3000,
+          });
+        }
+      })
+      .catch((err) => {
+        setIsLoading(false);
+        console.log(err);
+        // if (err.status === 401) {
+        //   console.log("401");
+        //   authCtx.logout();
+        // }
+        toast.current.show({
+          severity: "error",
+          summary: err?.data?.message || "Something went wrong!",
+          life: 3000,
+        });
+      });
+  };
 
   return (
-    <div className="surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden">
-      <div className="flex flex-column align-items-center justify-content-center">
-        <div style={{ padding: "0.3rem" }}>
-          <div className="w-full surface-card py-8 px-5 sm:px-8">
-            <div className="text-center mb-5">
-              <div className="text-900 text-3xl font-medium mb-3">Welcome!</div>
-              <span className="text-600 font-medium">Sign in to continue</span>
-            </div>
+    <Fragment>
+      <Toast ref={toast} position="top-right" />
+      <div className="surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden">
+        <div className="flex flex-column align-items-center justify-content-center">
+          <div style={{ padding: "0.3rem" }}>
+            <div className="w-full surface-card py-8 px-5 sm:px-8">
+              <div className="text-center mb-5">
+                <div className="text-900 text-3xl font-medium mb-3">
+                  Welcome!
+                </div>
+                <span className="text-600 font-medium">Login to continue</span>
+              </div>
 
-            <div>
-              <label
-                htmlFor="email1"
-                className="block text-900 text-xl font-medium mb-2"
-              >
-                Email
-              </label>
-              <InputText
-                inputid="email1"
-                type="text"
-                placeholder="Email address"
-                className="w-full md:w-30rem mb-5"
-                style={{ padding: "1rem" }}
-              />
-
-              <Button
-                label="Sign In"
-                className="w-full p-3 text-xl"
-                onClick={() => router.push("/")}
-              ></Button>
+              <form onSubmit={handleSubmit(onSubmitHandler)}>
+                <div className="flex flex-column align-text-center">
+                  <div className="mb-5">
+                    <label
+                      htmlFor="email"
+                      className="block text-900 text-xl font-medium mb-2"
+                    >
+                      Email
+                    </label>
+                    <InputText
+                      type="text"
+                      placeholder="Enter email"
+                      className="w-full md:w-30rem"
+                      style={{ padding: "1rem" }}
+                      {...register("email")}
+                    />
+                    <p className="text-red-500 mt-1">{errors.email?.message}</p>
+                  </div>
+                  <Button
+                    label="Login"
+                    loading={isLoading}
+                    className="p-3 text-xl"
+                  ></Button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </Fragment>
   );
 };
 

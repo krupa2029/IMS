@@ -1,9 +1,15 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { Ripple } from "primereact/ripple";
-import { Fragment } from "react";
+import { useContext } from "react";
+import AuthContext from "../store/auth-context";
 
 const AppSidebar = () => {
-  const handleLogout = () => {};
+  const authCtx = useContext(AuthContext);
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    authCtx.logout();
+    navigate("/login");
+  };
 
   return (
     <div className="layout-menu">
@@ -41,11 +47,11 @@ const AppSidebar = () => {
           </NavLink>
         </li>
         <li>
-          <NavLink onClick={handleLogout} tabIndex="0">
+          <a onClick={handleLogout} tabIndex="0">
             <i className="layout-menuitem-icon pi pi-fw pi-sign-out"></i>
             <div className="layout-menuitem-text">Logout</div>
             <Ripple />
-          </NavLink>
+          </a>
         </li>
       </ul>
     </div>

@@ -5514,9 +5514,9 @@
   margin-right: 0.5rem;
 }
 
-.p-toast {
+/* .p-toast {
   opacity: 0.9;
-}
+} */
 .p-toast .p-toast-message {
   margin: 0 0 1rem 0;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
