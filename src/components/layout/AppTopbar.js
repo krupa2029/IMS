@@ -3,7 +3,7 @@ const AppTopbar = (props) => {
     <div className="layout-topbar">
       <a className="layout-topbar-logo">
         <>
-          <span>SAKAI</span>
+          <span>IMS</span>
         </>
       </a>
 

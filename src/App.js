@@ -1,11 +1,10 @@
 import React, { useContext } from "react";
-import Layout from "./layout/Layout";
-import Dashboard from "./pages/Dashboard";
+import Layout from "./components/layout/Layout";
 import CheckoutReport from "./pages/CheckoutReport";
 import LoginPage from "./pages/LoginPage";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import AuthContext from "./store/auth-context";
-
+import ManageInventory from "./pages/ManageInventory";
 
 function App() {
   const authCtx = useContext(AuthContext);
@@ -23,12 +22,12 @@ function App() {
         },
         {
           path: "/dashboard",
-          element: <Dashboard />,
+          element: <ManageInventory />,
         },
-        {
-          path: "/checkout-report",
-          element: <CheckoutReport />,
-        },
+        // {
+        //   path: "/checkout-report",
+        //   element: <CheckoutReport />,
+        // },
       ],
     },
   ]);

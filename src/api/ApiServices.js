@@ -15,5 +15,11 @@ API.interceptors.request.use((req) => {
   return req;
 });
 
-export const login = (formData) =>
-  API.post("/user-role-management/user/login", formData);
+const ApiServices = {
+  login : (payload) => API.post("/user-role-management/user/login", payload),
+  getInventoryList : (payload) => API.post("/inventory-management/inventory/list", payload),
+  getLocationList: () => API.get('/inventory-management/inventory/location/list'),
+  addEditInventory: (payload) => API.post('/inventory-management/inventory/add-edit', payload)
+}
+
+export default ApiServices;

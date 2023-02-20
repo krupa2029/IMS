@@ -3,7 +3,7 @@ import { Button } from "primereact/button";
 import { useNavigate } from "react-router-dom";
 import { InputText } from "primereact/inputtext";
 import AuthContext from "../store/auth-context";
-import { login } from "../api";
+import ApiServices from "../api/ApiServices";
 import { Toast } from "primereact/toast";
 import { useForm } from "react-hook-form";
 import { joiResolver } from "@hookform/resolvers/joi";
@@ -36,7 +36,7 @@ const LoginPage = () => {
   const onSubmitHandler = (data) => {
     setIsLoading(true);
 
-    login({
+    ApiServices.login({
       email: data.email,
     })
       .then((responseData) => {
@@ -63,10 +63,6 @@ const LoginPage = () => {
       .catch((err) => {
         setIsLoading(false);
         console.log(err);
-        // if (err.status === 401) {
-        //   console.log("401");
-        //   authCtx.logout();
-        // }
         toast.current.show({
           severity: "error",
           summary: err?.data?.message || "Something went wrong!",

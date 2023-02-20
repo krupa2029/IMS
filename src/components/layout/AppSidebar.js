@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { Ripple } from "primereact/ripple";
 import { useContext } from "react";
-import AuthContext from "../store/auth-context";
+import AuthContext from "../../store/auth-context";
 
 const AppSidebar = () => {
   const authCtx = useContext(AuthContext);
