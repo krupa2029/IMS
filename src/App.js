@@ -11,7 +11,7 @@ function App() {
   const router = createBrowserRouter([
     {
       path: "/login",
-      element: <LoginPage />,
+      element: !authCtx.isLoggedIn ? <LoginPage /> : <Navigate to="/dashboard" />,
     },
     {
       element: authCtx.isLoggedIn ? <Layout /> : <Navigate to="/login" />,

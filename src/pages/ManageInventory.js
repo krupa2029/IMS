@@ -32,6 +32,7 @@ export default function ManageInventory() {
     setShowDeleteSelectedInventoryDialog,
   ] = useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
+  const [updateAvailable, setUpdateAvailable] = useState(false);
   const [lazyState, setlazyState] = useState({
     first: 0,
     rows: 5,
@@ -46,24 +47,83 @@ export default function ManageInventory() {
   );
 
   useEffect(() => {
-    const sortBy = lazyState.sortField
-      ? lazyState.sortField === "locationData.name"
-        ? "locationName"
-        : lazyState.sortField
-      : "purchaseDate";
-
-    sendRequest({
-      searchText: globalSearch,
-      pageSize: lazyState.rows,
-      pageIndex: lazyState.page + 1,
-      sortField: sortBy,
-      sortOrder: lazyState.sortOrder === 1 ? "asc" : "desc",
-    });
+    setUpdateAvailable(true);
   }, [sendRequest, lazyState, globalSearch]);
+
+  useEffect(() => {
+    if (updateAvailable) {
+      const sortBy = lazyState.sortField
+        ? lazyState.sortField === "locationData.name"
+          ? "locationName"
+          : lazyState.sortField
+        : "purchaseDate";
+
+      sendRequest({
+        searchText: globalSearch,
+        pageSize: lazyState.rows,
+        pageIndex: lazyState.page + 1,
+        sortField: sortBy,
+        sortOrder: lazyState.sortOrder === 1 ? "asc" : "desc",
+      });
+
+      setUpdateAvailable(false);
+    }
+  }, [updateAvailable]);
 
   if (!isLoading && error) {
     toast?.current?.show(toastData);
   }
+
+  const onPage = (event) => {
+    setlazyState(event);
+  };
+
+  const onSort = (event) => {
+    event["page"] = 0;
+    setlazyState(event);
+  };
+
+  const deleteInventoryHandler = (
+    updateAvailable = false,
+    showDialog = false,
+    inventoryData = null
+  ) => {
+    setUpdateAvailable(updateAvailable);
+    setInventory(inventoryData);
+    setShowDeleteInventoryDialog(showDialog);
+  };
+
+  const deleteSelectedInventoryHandler = (
+    updateAvailable = false,
+    showDialog = false,
+    setSelectedNull = true
+  ) => {
+    setUpdateAvailable(updateAvailable);
+    if (setSelectedNull) {
+      setInventory(null);
+    }
+    setShowDeleteSelectedInventoryDialog(showDialog);
+  };
+
+  const addEditInventoryHandler = (
+    updateAvailable = false,
+    showDialog = false,
+    inventoryData = null
+  ) => {
+    setInventory(inventoryData);
+    setShowAddEditInventoryDialog(showDialog);
+    setUpdateAvailable(updateAvailable);
+  };
+
+  const checkoutInventoryHandler = (
+    updateAvailable = false,
+    showDialog = false,
+    inventoryData = null
+  ) => {
+    setInventory(inventoryData);
+    setShowCheckoutInventoryDialog(showDialog);
+    setUpdateAvailable(updateAvailable);
+  };
 
   const actionBodyTemplate = (rowData) => {
     return (
@@ -71,29 +131,17 @@ export default function ManageInventory() {
         <FaEdit
           fontSize="1.4rem"
           className="mr-3"
-          onClick={() => {
-            setInventory(rowData);
-            setShowAddEditInventoryDialog(true);
-          }}
+          onClick={() => addEditInventoryHandler(false, true, rowData)}
         />
         <FaRegTrashAlt
           fontSize="1.4rem"
           className="mr-3"
-          onClick={() => {
-            setInventory(rowData);
-            setShowDeleteInventoryDialog(true);
-          }}
+          onClick={() => deleteInventoryHandler(false, true, rowData)}
         />
-        {/* <RiInboxUnarchiveLine fontSize="1.55rem" 
-        // onClick={() => editProduct(rowData)}
-         /> */}
-        {(rowData.canBeCheckedout && rowData.availableQuantity > 0) && (
+        {rowData.canBeCheckedout && rowData.availableQuantity > 0 && (
           <BsCartCheckFill
             fontSize="1.55rem"
-              onClick={() => {
-                setInventory(rowData);
-                setShowCheckoutInventoryDialog(true);
-              }}
+            onClick={() => checkoutInventoryHandler(false, true, rowData)}
           />
         )}
       </div>
@@ -133,16 +181,13 @@ export default function ManageInventory() {
             label="New"
             icon="pi pi-plus"
             className="mr-2"
-            onClick={() => {
-              setInventory(null);
-              setShowAddEditInventoryDialog(true);
-            }}
+            onClick={() => addEditInventoryHandler(false, true)}
           />
           <Button
             label="Delete"
             icon="pi pi-trash"
             className="p-button-danger"
-            onClick={() => setShowDeleteSelectedInventoryDialog(true)}
+            onClick={() => deleteSelectedInventoryHandler(false, true, false)}
             disabled={!selectedInventories || !selectedInventories.length}
           />
         </div>
@@ -161,17 +206,6 @@ export default function ManageInventory() {
         />
       </span>
     );
-  };
-
-  const onPage = (event) => {
-    console.log(event);
-    setlazyState(event);
-  };
-
-  const onSort = (event) => {
-    console.log(event);
-    event["page"] = 0;
-    setlazyState(event);
   };
 
   return (
@@ -225,17 +259,19 @@ export default function ManageInventory() {
             <Column
               header="Image"
               body={imageBodyTemplate}
-              headerStyle={{ minWidth: "8rem" }}
+              headerStyle={{ minWidth: "10rem" }}
             ></Column>
             <Column
               field="availableQuantity"
               header="Available Quantity"
               sortable
+              headerStyle={{ minWidth: "8rem" }}
             ></Column>
             <Column
               field="totalQuantity"
               header="Total Quantity"
               sortable
+              headerStyle={{ minWidth: "8rem" }}
             ></Column>
             <Column
               field="category"
@@ -270,32 +306,26 @@ export default function ManageInventory() {
           </DataTable>
 
           <AddEditInventoryForm
-            setShowAddEditInventoryDialog={setShowAddEditInventoryDialog}
+            addEditInventoryHandler={addEditInventoryHandler}
             showAddEditInventoryDialog={showAddEditInventoryDialog}
             inventory={inventory}
-            setInventory={setInventory}
           />
           <CheckoutInventoryForm
-            setShowCheckoutInventoryDialog={setShowCheckoutInventoryDialog}
             showCheckoutInventoryDialog={showCheckoutInventoryDialog}
+            checkoutInventoryHandler={checkoutInventoryHandler}
             inventory={inventory}
-            setInventory={setInventory}
           />
           <DeleteSingleInventoryPrompt
-            setShowDeleteInventoryDialog={setShowDeleteInventoryDialog}
+            deleteInventoryHandler={deleteInventoryHandler}
             showDeleteInventoryDialog={showDeleteInventoryDialog}
             inventory={inventory}
-            setInventory={setInventory}
           />
           <DeleteSelectedInventoriesPrompt
             showDeleteSelectedInventoryDialog={
               showDeleteSelectedInventoryDialog
             }
-            setShowDeleteSelectedInventoryDialog={
-              setShowDeleteSelectedInventoryDialog
-            }
+            deleteSelectedInventoryHandler={deleteSelectedInventoryHandler}
             selectedInventories={selectedInventories}
-            setSelectedInventories={setSelectedInventories}
           />
         </div>
       </div>

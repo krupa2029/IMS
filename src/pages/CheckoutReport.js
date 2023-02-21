@@ -161,7 +161,6 @@ export default function ManageInventory() {
             ref={dt}
             lazy
             value={data?.recordList}
-            dataKey="_id"
             responsiveLayout="scroll"
             onSort={onSort}
             sortField={lazyState.sortField}

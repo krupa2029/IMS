@@ -27,10 +27,15 @@ function AddEditInventoryForm(props) {
   } = useForm();
 
   useEffect(() => {
+    reset();
     if (props.showAddEditInventoryDialog) {
       getLocations.sendRequest();
     }
-  }, [getLocations.sendRequest, props.showAddEditInventoryDialog]);
+  }, [
+    getLocations.sendRequest,
+    props.showAddEditInventoryDialog,
+    props.inventory,
+  ]);
 
   const getFormErrorMessage = (name) => {
     return (
@@ -38,10 +43,8 @@ function AddEditInventoryForm(props) {
     );
   };
 
-  const hideDialog = () => {
-    reset();
-    props.setInventory(null);
-    props.setShowAddEditInventoryDialog(false);
+  const hideDialog = (updateAvailable = false) => {
+    props.addEditInventoryHandler(updateAvailable);
   };
 
   const onSubmitHandler = async (data) => {
@@ -65,7 +68,7 @@ function AddEditInventoryForm(props) {
     if (!addEditInventory.isLoading && addEditInventory.toastData) {
       toast.current.show(addEditInventory.toastData);
       if (addEditInventory.status === "success") {
-        hideDialog();
+        hideDialog(true);
       }
     }
   }, [addEditInventory.toastData, addEditInventory.status]);
@@ -91,7 +94,7 @@ function AddEditInventoryForm(props) {
         header={props.inventory?._id ? "Edit Inventory" : "Add Inventory"}
         modal
         className="p-fluid"
-        onHide={hideDialog}
+        onHide={() => hideDialog()}
       >
         <form onSubmit={handleSubmit(onSubmitHandler)}>
           <div className="formgrid grid">

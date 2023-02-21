@@ -24,6 +24,7 @@ export const AuthContextProvider = (props) => {
 
   const logoutHandler = useCallback(() => {
     localStorage.removeItem("userData");
+    setUserData(null);
   },[]);
 
   const contextValue = {

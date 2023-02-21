@@ -1,14 +1,11 @@
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { InputNumber } from "primereact/inputnumber";
-import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { RadioButton } from "primereact/radiobutton";
-import { InputSwitch } from "primereact/inputswitch";
 import React, { useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { FileUpload } from "primereact/fileupload";
 import { Calendar } from "primereact/calendar";
 import ApiServices from "../../api/ApiServices";
 import useHttp from "../../hooks/use-http";
@@ -31,10 +28,8 @@ function CheckoutInventoryForm(props) {
     );
   };
 
-  const hideDialog = () => {
-    reset();
-    props.setInventory(null);
-    props.setShowCheckoutInventoryDialog(false);
+  const hideDialog = (updateAvailable = false) => {
+    props.checkoutInventoryHandler(updateAvailable);
   };
 
   const onSubmitHandler = (data) => {
@@ -50,10 +45,11 @@ function CheckoutInventoryForm(props) {
   };
 
   useEffect(() => {
+    reset();
     if (!checkoutInventory.isLoading && checkoutInventory.toastData) {
       toast.current.show(checkoutInventory.toastData);
       if (checkoutInventory.status === "success") {
-        hideDialog();
+        hideDialog(true);
       }
     }
   }, [checkoutInventory.toastData, checkoutInventory.status]);
@@ -248,7 +244,7 @@ function CheckoutInventoryForm(props) {
               <Button
                 type="submit"
                 label="Checkout"
-                // loading={addEditInventory.isLoading}
+                loading={checkoutInventory.isLoading}
                 icon="pi pi-check"
                 className="p-button-text"
               />

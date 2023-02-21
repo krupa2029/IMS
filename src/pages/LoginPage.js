@@ -44,14 +44,8 @@ const LoginPage = () => {
         if (responseData.data.httpStatus === 200) {
           if (responseData?.data?.data) {
             authCtx.login(responseData?.data?.data);
+            navigate("/dashboard");
           }
-
-          // toast.current.show({
-          //   severity: "success",
-          //   summary: responseData?.data?.message,
-          //   life: 3000,
-          // });
-          navigate("/dashboard");
         } else {
           toast.current.show({
             severity: "error",

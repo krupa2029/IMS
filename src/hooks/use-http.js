@@ -1,4 +1,5 @@
-import { useReducer, useCallback } from "react";
+import { useReducer, useCallback, useContext } from "react";
+import AuthContext from "../store/auth-context";
 
 function httpReducer(state, action) {
   // Sending Request to Server for Data...
@@ -6,7 +7,7 @@ function httpReducer(state, action) {
     return {
       data: null,
       error: null,
-      status: 'pending',
+      status: "pending",
       isLoading: true,
       toastData: null,
     };
@@ -17,7 +18,7 @@ function httpReducer(state, action) {
     return {
       data: action.responseData.data,
       error: null,
-      status: 'success',
+      status: "success",
       isLoading: false,
       toastData: {
         severity: "success",
@@ -32,7 +33,7 @@ function httpReducer(state, action) {
     return {
       data: null,
       error: action.errorMessage,
-      status: 'error',
+      status: "error",
       isLoading: false,
       toastData: {
         severity: "error",
@@ -48,6 +49,7 @@ function httpReducer(state, action) {
 // When sending Request set startWithPending=true...
 
 function useHttp(requestFunction, isLoading = false) {
+  const authCtx = useContext(AuthContext);
   const initialHttpState = {
     isLoading: isLoading,
     status: null,
@@ -63,17 +65,24 @@ function useHttp(requestFunction, isLoading = false) {
       dispatch({ type: "SEND" });
       try {
         const responseData = await requestFunction(requestData);
-        console.log("responseData", responseData);
         if (responseData.data.httpStatus === 200) {
           dispatch({ type: "SUCCESS", responseData: responseData.data });
         } else {
           dispatch({
             type: "ERROR",
-            errorMessage: responseData.data.data.message || "Something went wrong!",
+            errorMessage:
+              responseData.data.data.message || "Something went wrong!",
           });
         }
       } catch (error) {
         console.log(error);
+        if(error.response.status === 401){
+          dispatch({
+            type: "ERROR",
+            errorMessage: "Your session expired. Please login to continue!",
+          });
+          authCtx.logout()
+        }
         dispatch({
           type: "ERROR",
           errorMessage: error.response.data.message || "Something went wrong!",
