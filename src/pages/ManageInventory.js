@@ -14,14 +14,19 @@ import {
 import ApiServices from "../api/ApiServices";
 import useHttp from "../hooks/use-http";
 import AddEditInventoryForm from "../components/inventory/AddEditInventoryForm";
+import CheckoutInventoryForm from "../components/inventory/CheckoutInventoryForm";
 
 export default function ManageInventory() {
   const toast = useRef(null);
   const dt = useRef(null);
   const [inventory, setInventory] = useState(null);
   const [selectedInventories, setSelectedInventories] = useState(null);
-  const [showAddEditInventoryDialog, setShowAddEditInventoryDialog] = useState(false);
-  const [showDeleteInventoryDialog, setShowDeleteInventoryDialog] = useState(false);
+  const [showAddEditInventoryDialog, setShowAddEditInventoryDialog] =
+    useState(false);
+  const [showCheckoutInventoryDialog, setShowCheckoutInventoryDialog] =
+    useState(false);
+  const [showDeleteInventoryDialog, setShowDeleteInventoryDialog] =
+    useState(false);
   const [
     showDeleteSelectedInventoryDialog,
     setShowDeleteSelectedInventoryDialog,
@@ -56,7 +61,6 @@ export default function ManageInventory() {
     });
   }, [sendRequest, lazyState, globalSearch]);
 
-  
   if (!isLoading && error) {
     toast?.current?.show(toastData);
   }
@@ -80,11 +84,18 @@ export default function ManageInventory() {
             setShowDeleteInventoryDialog(true);
           }}
         />
-        {/* <BsCartCheck fontSize="1.4rem" onClick={() => editProduct(rowData)} /> */}
-        {/* <BsCartCheckFill
-          fontSize="1.5rem"
-          onClick={() => editProduct(rowData)}
-        /> */}
+        {/* <RiInboxUnarchiveLine fontSize="1.55rem" 
+        // onClick={() => editProduct(rowData)}
+         /> */}
+        {(rowData.canBeCheckedout && rowData.availableQuantity > 0) && (
+          <BsCartCheckFill
+            fontSize="1.55rem"
+              onClick={() => {
+                setInventory(rowData);
+                setShowCheckoutInventoryDialog(true);
+              }}
+          />
+        )}
       </div>
     );
   };
@@ -99,6 +110,17 @@ export default function ManageInventory() {
           className="shadow-2"
           width="100"
         /> */}
+      </>
+    );
+  };
+
+  const purchaseDateBodyTemplate = (rowData) => {
+    return (
+      <>
+        <span className="p-column-title">Purchase Date</span>
+        {rowData.purchaseDate
+          ? new Date(rowData.purchaseDate).toLocaleDateString()
+          : null}
       </>
     );
   };
@@ -237,6 +259,7 @@ export default function ManageInventory() {
               field="purchaseDate"
               header="Purchase Date"
               sortable
+              body={purchaseDateBodyTemplate}
               headerStyle={{ minWidth: "10rem" }}
             ></Column>
             <Column
@@ -249,6 +272,12 @@ export default function ManageInventory() {
           <AddEditInventoryForm
             setShowAddEditInventoryDialog={setShowAddEditInventoryDialog}
             showAddEditInventoryDialog={showAddEditInventoryDialog}
+            inventory={inventory}
+            setInventory={setInventory}
+          />
+          <CheckoutInventoryForm
+            setShowCheckoutInventoryDialog={setShowCheckoutInventoryDialog}
+            showCheckoutInventoryDialog={showCheckoutInventoryDialog}
             inventory={inventory}
             setInventory={setInventory}
           />

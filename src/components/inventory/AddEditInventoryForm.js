@@ -294,6 +294,8 @@ function AddEditInventoryForm(props) {
                       value={field.value}
                       onChange={(e) => field.onChange(e.value)}
                       dateFormat="mm/dd/yy"
+                      placeholder="mm/dd/yyyy"
+                      maxDate={new Date()}
                       showIcon
                     />
                     {getFormErrorMessage(field.name)}

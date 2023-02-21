@@ -18,8 +18,10 @@ API.interceptors.request.use((req) => {
 const ApiServices = {
   login : (payload) => API.post("/user-role-management/user/login", payload),
   getInventoryList : (payload) => API.post("/inventory-management/inventory/list", payload),
+  getInventoryCheckoutList : (payload) => API.post("/inventory-management/inventory/checkout-list", payload),
   getLocationList: () => API.get('/inventory-management/inventory/location/list'),
-  addEditInventory: (payload) => API.post('/inventory-management/inventory/add-edit', payload)
+  addEditInventory: (payload) => API.post('/inventory-management/inventory/add-edit', payload),
+  checkoutInventory: (payload) => API.post('/inventory-management/inventory/checkout', payload),
 }
 
 export default ApiServices;

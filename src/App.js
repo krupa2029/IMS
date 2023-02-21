@@ -24,10 +24,10 @@ function App() {
           path: "/dashboard",
           element: <ManageInventory />,
         },
-        // {
-        //   path: "/checkout-report",
-        //   element: <CheckoutReport />,
-        // },
+        {
+          path: "/checkout-report",
+          element: <CheckoutReport />,
+        },
       ],
     },
   ]);
