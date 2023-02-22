@@ -15,6 +15,7 @@ import ApiServices from "../api/ApiServices";
 import useHttp from "../hooks/use-http";
 import AddEditInventoryForm from "../components/inventory/AddEditInventoryForm";
 import CheckoutInventoryForm from "../components/inventory/CheckoutInventoryForm";
+import { Tooltip } from "primereact/tooltip";
 
 export default function ManageInventory() {
   const toast = useRef(null);
@@ -128,19 +129,27 @@ export default function ManageInventory() {
   const actionBodyTemplate = (rowData) => {
     return (
       <div className="flex flex-column md:flex-row md:align-items-center">
+        <Tooltip target=".custom-target-icon" />
         <FaEdit
           fontSize="1.4rem"
-          className="mr-3"
+          data-pr-tooltip="Edit"
+          className="mr-3 custom-target-icon cursor-pointer"
+          data-pr-position="top"
           onClick={() => addEditInventoryHandler(false, true, rowData)}
         />
         <FaRegTrashAlt
           fontSize="1.4rem"
-          className="mr-3"
+          className="mr-3 custom-target-icon cursor-pointer"
+          data-pr-tooltip="Delete"
+          data-pr-position="top"
           onClick={() => deleteInventoryHandler(false, true, rowData)}
         />
         {rowData.canBeCheckedout && rowData.availableQuantity > 0 && (
           <BsCartCheckFill
             fontSize="1.55rem"
+            className="custom-target-icon cursor-pointer"
+            data-pr-tooltip="Checkout"
+            data-pr-position="top"
             onClick={() => checkoutInventoryHandler(false, true, rowData)}
           />
         )}

@@ -23,6 +23,7 @@ const ApiServices = {
   addEditInventory: (payload) => API.post('/inventory-management/inventory/add-edit', payload),
   checkoutInventory: (payload) => API.post('/inventory-management/inventory/checkout', payload),
   deleteInventory: (payload) => API.post('/inventory-management/inventory/delete', payload),
+  returnInventory: (payload) => API.post('/inventory-management/inventory/return', payload),
 }
 
 export default ApiServices;

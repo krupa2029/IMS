@@ -11,10 +11,12 @@ import ApiServices from "../../api/ApiServices";
 import useHttp from "../../hooks/use-http";
 import { classNames } from "primereact/utils";
 import { Toast } from "primereact/toast";
+import { Tooltip } from 'primereact/tooltip';
 
-function CheckoutInventoryForm(props) {
+function ReturnInventoryForm(props) {
+  const { inventory } = props;
   const toast = useRef(null);
-  const checkoutInventory = useHttp(ApiServices.checkoutInventory, false);
+  const returnInventory = useHttp(ApiServices.returnInventory, false);
   const {
     control,
     reset,
@@ -29,38 +31,39 @@ function CheckoutInventoryForm(props) {
   };
 
   const hideDialog = (updateAvailable = false) => {
-    props.checkoutInventoryHandler(updateAvailable);
+    props.returnInventoryHandler(updateAvailable);
   };
 
   const onSubmitHandler = (data) => {
     console.log(data);
     const payload = {
-      toolId: props.inventory?._id,
-      toolType: props.inventory?.category === "Material" ? "M" : "E",
-      expectedReturnDate: data.expectedReturnDate?.toISOString(),
-      checkoutQuantity: data.checkoutQuantity,
-      notes: data.notes,
+      checkoutId: inventory?.checkoutId,
+      returnDate: data.returnDate?.toISOString(),
+      returnQuantity: data.returnQuantity,
     };
-    checkoutInventory.sendRequest(payload);
+
+    console.log(payload);
+
+    returnInventory.sendRequest(payload)
   };
 
   useEffect(() => {
     reset();
-    if (!checkoutInventory.isLoading && checkoutInventory.toastData) {
-      toast.current.show(checkoutInventory.toastData);
-      if (checkoutInventory.status === "success") {
+    if (!returnInventory.isLoading && returnInventory.toastData) {
+      toast.current.show(returnInventory.toastData);
+      if (returnInventory.status === "success") {
         hideDialog(true);
       }
     }
-  }, [checkoutInventory.toastData, checkoutInventory.status]);
+  }, [returnInventory.toastData, returnInventory.status]);
 
   return (
     <>
       <Toast ref={toast} />
       <Dialog
-        visible={props.showCheckoutInventoryDialog}
+        visible={props.showReturnInventoryDialog}
         style={{ width: "45rem" }}
-        header={"Checkout Inventory"}
+        header={"Return Inventory"}
         modal
         className="p-fluid"
         onHide={hideDialog}
@@ -69,34 +72,40 @@ function CheckoutInventoryForm(props) {
           <div className="formgrid grid">
             <div className="field col-6">
               <label htmlFor="name">Name</label>
-              <InputText
+              <Controller
                 name="name"
-                value={props.inventory?.name || ""}
-                disabled
+                control={control}
+                defaultValue={inventory?.toolDetails?.name || ""}
+                render={({ field }) => (
+                  <InputText id={field.name} value={field.value} disabled />
+                )}
               />
             </div>
           </div>
           <div className="formgrid grid">
             <div className="field col-6">
               <label htmlFor="modelNumber">Model</label>
-              <InputText
+              <Controller
                 name="modelNumber"
-                value={props.inventory?.modelNumber || ""}
-                disabled
+                control={control}
+                defaultValue={inventory?.toolDetails?.modelNumber || ""}
+                render={({ field }) => (
+                  <InputText id={field.name} value={field.value} disabled />
+                )}
               />
             </div>
           </div>
 
-          <div className="formgrid grid">
+          {/* <div className="formgrid grid">
             <div className="field col">
               <label htmlFor="description">Description</label>
               <InputTextarea
                 name="description"
-                value={props.inventory?.description || ""}
+                value={inventory?.description || ""}
                 disabled
               />
             </div>
-          </div>
+          </div> */}
 
           <div className="formgrid grid">
             <div className="field col">
@@ -111,7 +120,7 @@ function CheckoutInventoryForm(props) {
                     inputId="equipment"
                     disabled
                     value="Equipment"
-                    checked={props.inventory?.category === "Equipment"}
+                    checked={inventory?.toolDetails?.type === "Equipment"}
                   />
                   <label htmlFor="equipment" className="ml-1 mr-3">
                     Equipment
@@ -124,7 +133,7 @@ function CheckoutInventoryForm(props) {
                     inputId="material"
                     disabled
                     value="Material"
-                    checked={props.inventory?.category === "Material"}
+                    checked={inventory?.toolDetails?.type === "Material"}
                   />
                   <label htmlFor="material" className="ml-1 mr-3">
                     Material
@@ -132,11 +141,14 @@ function CheckoutInventoryForm(props) {
                 </div>
               </div>
             </div>
+
             <div className="field col">
-              <label htmlFor="availableQuantity">Available Quantity</label>
+              <label htmlFor="checkoutQuantity">
+                Currently Checkedout Quantity
+              </label>
               <InputNumber
-                name="availableQuantity"
-                value={props.inventory?.availableQuantity || 1}
+                name="checkoutQuantity"
+                value={inventory?.checkoutQuantity}
                 disabled
               />
             </div>
@@ -146,9 +158,9 @@ function CheckoutInventoryForm(props) {
 
           <div className="formgrid grid">
             <div className="field col">
-              <label htmlFor="expectedReturnDate">Expected Return Date</label>
+              <label htmlFor="returnDate">Return Date</label>
               <Controller
-                name="expectedReturnDate"
+                name="returnDate"
                 control={control}
                 rules={{ required: "Please select date!" }}
                 render={({ field }) => (
@@ -159,7 +171,7 @@ function CheckoutInventoryForm(props) {
                       onChange={(e) => field.onChange(e.value)}
                       dateFormat="mm/dd/yy"
                       placeholder="mm/dd/yyyy"
-                      minDate={new Date()}
+                      maxDate={new Date()}
                       showIcon
                     />
                     {getFormErrorMessage(field.name)}
@@ -169,17 +181,17 @@ function CheckoutInventoryForm(props) {
             </div>
 
             <div className="field col">
-              <label htmlFor="checkoutQuantity">Checkout Quantity</label>
+              <label htmlFor="returnQuantity">Return Quantity</label>
               <Controller
-                name="checkoutQuantity"
+                name="returnQuantity"
                 control={control}
                 rules={{
-                  required: "Checkout quantity is required!",
+                  required: "Return quantity is required!",
                   validate: (value) => {
                     if (value < 1) {
                       return "Quantity can not be less than 1!";
-                    } else if (value > props.inventory?.availableQuantity) {
-                      return `There is only ${props.inventory?.availableQuantity} item/items available for checkout!`;
+                    } else if (value > inventory?.checkoutQuantity) {
+                      return `You have checkedout ${inventory?.checkoutQuantity} item/items only!`;
                     }
                   },
                 }}
@@ -192,7 +204,7 @@ function CheckoutInventoryForm(props) {
                       value={field.value}
                       showButtons
                       min={1}
-                      max={props.inventory?.availableQuantity}
+                      max={inventory?.checkoutQuantity}
                       onValueChange={(e) => field.onChange(e)}
                       inputClassName={classNames({
                         "p-invalid": fieldState.error,
@@ -203,24 +215,6 @@ function CheckoutInventoryForm(props) {
                 )}
               />
             </div>
-          </div>
-          <div className="field">
-            <label htmlFor="notes">Notes</label>
-            <Controller
-              name="notes"
-              control={control}
-              defaultValue=""
-              render={({ field }) => (
-                <>
-                  <InputTextarea
-                    id={field.name}
-                    {...field}
-                    rows={2}
-                    cols={30}
-                  />
-                </>
-              )}
-            />
           </div>
 
           <div className="formgrid grid flex justify-content-end ">
@@ -236,8 +230,8 @@ function CheckoutInventoryForm(props) {
             <div>
               <Button
                 type="submit"
-                label="Checkout"
-                loading={checkoutInventory.isLoading}
+                label="Return"
+                // loading={returnInventory.isLoading}
                 icon="pi pi-check"
                 className="p-button-text"
               />
@@ -249,4 +243,4 @@ function CheckoutInventoryForm(props) {
   );
 }
 
-export default CheckoutInventoryForm;
+export default ReturnInventoryForm;

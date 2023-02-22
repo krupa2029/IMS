@@ -4,24 +4,21 @@ import { DataTable } from "primereact/datatable";
 import { InputText } from "primereact/inputtext";
 import { Toast } from "primereact/toast";
 import { Toolbar } from "primereact/toolbar";
+import { Tooltip } from "primereact/tooltip";
 import React, { useEffect, useRef, useState } from "react";
-import { FaEdit, FaRegTrashAlt } from "react-icons/fa";
 import { CgArrowRightR } from "react-icons/cg";
-import {
-  DeleteSelectedInventoriesPrompt,
-  DeleteSingleInventoryPrompt,
-} from "../components/inventory/DeleteInventoryPrompt";
 import ApiServices from "../api/ApiServices";
+import ReturnInventoryForm from "../components/inventory/ReturnInventoryForm";
 import useHttp from "../hooks/use-http";
-import AddEditInventoryForm from "../components/inventory/AddEditInventoryForm";
 
 export default function ManageInventory() {
   const toast = useRef(null);
   const dt = useRef(null);
   const [inventory, setInventory] = useState(null);
-  const [showDeleteInventoryDialog, setShowDeleteInventoryDialog] =
+  const [showReturnInventoryDialog, setShowReturnInventoryDialog] =
     useState(false);
   const [globalSearch, setGlobalSearch] = useState("");
+  const [updateAvailable, setUpdateAvailable] = useState(false);
   const [lazyState, setlazyState] = useState({
     first: 0,
     rows: 5,
@@ -60,20 +57,46 @@ export default function ManageInventory() {
   };
 
   useEffect(() => {
-    const sortBy = getSortBy(lazyState.sortField);
-    sendRequest({
-      searchText: globalSearch,
-      userId: null,
-      pageSize: lazyState.rows,
-      pageIndex: lazyState.page + 1,
-      sortField: sortBy,
-      sortOrder: lazyState.sortOrder === 1 ? "asc" : "desc",
-    });
+    setUpdateAvailable(true);
   }, [sendRequest, lazyState, globalSearch]);
+
+  useEffect(() => {
+    if (updateAvailable) {
+      const sortBy = getSortBy(lazyState.sortField);
+      sendRequest({
+        searchText: globalSearch,
+        userId: null,
+        pageSize: lazyState.rows,
+        pageIndex: lazyState.page + 1,
+        sortField: sortBy,
+        sortOrder: lazyState.sortOrder === 1 ? "asc" : "desc",
+      });
+
+      setUpdateAvailable(false);
+    }
+  }, [updateAvailable]);
 
   if (!isLoading && error) {
     toast?.current?.show(toastData);
   }
+
+  const onPage = (event) => {
+    setlazyState(event);
+  };
+
+  const onSort = (event) => {
+    event["page"] = 0;
+    setlazyState(event);
+  };
+  const returnInventoryHandler = (
+    updateAvailable = false,
+    showDialog = false,
+    inventoryData = null
+  ) => {
+    setInventory(inventoryData);
+    setShowReturnInventoryDialog(showDialog);
+    setUpdateAvailable(updateAvailable);
+  };
 
   const actionBodyTemplate = (rowData) => {
     return (
@@ -81,10 +104,15 @@ export default function ManageInventory() {
         <span className="p-column-title">Return</span>
         <div className="flex flex-column md:flex-row md:align-items-center">
           {!rowData.returnDetails && (
-            <CgArrowRightR
-              fontSize="1.55rem"
-              //   onClick={() => editProduct(rowData)}
-            />
+            <>
+              <Tooltip target=".custom-target-icon" />
+              <CgArrowRightR
+                fontSize="1.55rem"
+                className="custom-target-icon cursor-pointer"
+                data-pr-tooltip="Return"
+                onClick={() => returnInventoryHandler(false, true, rowData)}
+              />
+            </>
           )}
         </div>
       </>
@@ -138,17 +166,6 @@ export default function ManageInventory() {
         />
       </span>
     );
-  };
-
-  const onPage = (event) => {
-    console.log(event);
-    setlazyState(event);
-  };
-
-  const onSort = (event) => {
-    console.log(event);
-    event["page"] = 0;
-    setlazyState(event);
   };
 
   return (
@@ -221,6 +238,14 @@ export default function ManageInventory() {
               headerStyle={{ minWidth: "5rem" }}
             ></Column>
           </DataTable>
+
+          {showReturnInventoryDialog && (
+            <ReturnInventoryForm
+              showReturnInventoryDialog={showReturnInventoryDialog}
+              returnInventoryHandler={returnInventoryHandler}
+              inventory={inventory}
+            />
+          )}
         </div>
       </div>
     </div>
