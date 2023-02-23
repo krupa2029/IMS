@@ -19,7 +19,7 @@ module.exports = {
 
     const locationExist = await locationCollection.countDocuments({
       name: { $regex: name, $options: "i" },
-      _id: { $ne: locationId }
+      _id: { $ne: locationId },
     });
 
     const locationData = {
@@ -60,5 +60,25 @@ module.exports = {
     return next(
       new GeneralResponse(responseMessage, httpStatusCode.HTTP_SUCCESS)
     );
-  })
+  }),
+
+  getLocationList: catchAsyncError(async (req, res, next) => {
+    const locationCollection = db.collection("locations");
+    const responseData = await locationCollection.find(
+      {
+        isDeleted: false,
+      },
+      {
+        projection: { _id: 1, name: 1 },
+      }
+    ).toArray();
+
+    return next(
+      new GeneralResponse(
+        messages.LIST_SUCCESS,
+        httpStatusCode.HTTP_SUCCESS,
+        responseData
+      )
+    );
+  }),
 };

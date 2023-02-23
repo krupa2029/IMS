@@ -17,6 +17,13 @@ router.post(
 );
 
 router.post(
+  "/delete",
+  validator.body(inventoryValidation.deleteInventory),
+  authenticate,
+  inventoryController.deleteInventory
+);
+
+router.post(
   "/checkout",
   validator.body(inventoryValidation.checkoutInventory),
   authenticate,

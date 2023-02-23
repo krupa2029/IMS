@@ -16,4 +16,10 @@ router.post(
     locationController.addEditLocation
 );
 
+router.get(
+  "/list",
+  authenticate,
+  locationController.getLocationList
+);
+
 module.exports = router;

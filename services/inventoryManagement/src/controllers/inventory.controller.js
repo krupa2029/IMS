@@ -69,14 +69,11 @@ module.exports = {
         );
         ERR_MSG =
           inventory.availableQuantity > 1
-            ? ERR_MSG.replace(
-                /<n2>/,
-                inventory.availableQuantity
-              )
-            : ERR_MSG.replace(
-                /<n2>/,
-                inventory.availableQuantity
-              ).replace(/items are/, "item is");
+            ? ERR_MSG.replace(/<n2>/, inventory.availableQuantity)
+            : ERR_MSG.replace(/<n2>/, inventory.availableQuantity).replace(
+                /items are/,
+                "item is"
+              );
 
         return next(
           new GeneralResponse(ERR_MSG, httpStatusCode.HTTP_BAD_REQUEST)
@@ -105,6 +102,34 @@ module.exports = {
 
     return next(
       new GeneralResponse(responseMessage, httpStatusCode.HTTP_SUCCESS)
+    );
+  }),
+
+  deleteInventory: catchAsyncError(async (req, res, next) => {
+    const { inventoryData } = req.body;
+
+    inventoryData.map(async (item) => {
+      const collectionName =
+        item.category === INVENTORY_CATEGORY_CODE.MATERIAL
+          ? "materials"
+          : "equipment";
+      const inventoryCollection = db.collection(collectionName);
+
+      await inventoryCollection.updateOne(
+        { _id: convertToObjectId(item.id) },
+        {
+          $set: {
+            isDeleted: true,
+          },
+        }
+      );
+    });
+
+    return next(
+      new GeneralResponse(
+        messages.DELETE_INVENTORY_SUCCESS,
+        httpStatusCode.HTTP_SUCCESS
+      )
     );
   }),
 
@@ -318,8 +343,8 @@ module.exports = {
             category: {
               $cond: [
                 { $eq: ["$source", "materials"] },
-                "material",
-                "equipment",
+                "Material",
+                "Equipment",
               ],
             },
           },
@@ -448,7 +473,7 @@ module.exports = {
 
     return next(
       new GeneralResponse(
-        messages.INVENTORY_LIST_SUCCESS,
+        messages.LIST_SUCCESS,
         httpStatusCode.HTTP_SUCCESS,
         data
       )
@@ -472,7 +497,10 @@ module.exports = {
         sortBy = "toolData.modelNumber";
         break;
       case "quantity":
-        sortBy = "returnData.returnQuantity";
+        sortBy = "quantity";
+        break;
+      case 'checkoutByUserName':
+        sortBy = 'checkoutByUserName';
         break;
       case "category":
         sortBy = "toolType";
@@ -517,7 +545,7 @@ module.exports = {
       {
         $unwind: {
           path: "$returnData",
-          preserveNullAndEmptyArrays: true,
+          preserveNullAndEmptyArrays: false,
         },
       },
       {
@@ -618,6 +646,13 @@ module.exports = {
           },
         },
         {
+          $addFields: {
+            checkoutByUserName: {
+              $concat: ["$checkoutBy.firstName", " ", "$checkoutBy.lastName"]
+            },
+          },
+        },
+        {
           $match: {
             $and: [
               userId
@@ -632,19 +667,7 @@ module.exports = {
                         ? {
                             $or: [
                               {
-                                "checkoutBy.firstName": {
-                                  $regex: searchString,
-                                  $options: "i",
-                                },
-                              },
-                              {
-                                "checkoutBy.lastName": {
-                                  $regex: searchString,
-                                  $options: "i",
-                                },
-                              },
-                              {
-                                "returnBy.firstName": {
+                                "checkoutByUserName": {
                                   $regex: searchString,
                                   $options: "i",
                                 },
@@ -717,14 +740,12 @@ module.exports = {
             isReturned: "$isReturned",
             expectedReturnDate: "$expectedReturnDate",
             userId: "$checkoutBy._id",
-            userName: {
-              $concat: ["$checkoutBy.firstName", " ", "$checkoutBy.lastName"],
-            },
+            userName: '$checkoutByUserName',
             toolDetails: {
               _id: "$toolData._id",
               name: "$toolData.name",
               image: "$toolData.image",
-              type: "$toolType",
+              type: { $cond: [ { $eq: [ "$toolType", 'M' ] },'Material', 'Equipment' ] },
               modelNumber: "$toolData.modelNumber",
             },
             quantity: "$quantity",
@@ -777,7 +798,7 @@ module.exports = {
 
     return next(
       new GeneralResponse(
-        messages.INVENTORY_LIST_SUCCESS,
+        messages.LIST_SUCCESS,
         httpStatusCode.HTTP_SUCCESS,
         data
       )

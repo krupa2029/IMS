@@ -20,13 +20,26 @@ module.exports = {
         INVENTORY_CATEGORY_CODE.MATERIAL,
         INVENTORY_CATEGORY_CODE.EQUIPMENT
       ),
-    purchaseDate: Joi.date().format("DD-MM-YYYY").required(),
+    purchaseDate: Joi.date().required(),
     modelNumber: Joi.string().required(),
     locationId: ObjectId().required(),
     totalQuantity: Joi.number().integer().min(1).required(),
     canBeCheckedout: Joi.boolean().required(),
     isDeleted: Joi.boolean().required(),
   }),
+
+  deleteInventory: customJoi.object({
+    inventoryData: Joi.array().items({
+      id: ObjectId().required(),
+      category: Joi.string()
+      .required()
+      .valid(
+        INVENTORY_CATEGORY_CODE.MATERIAL,
+        INVENTORY_CATEGORY_CODE.EQUIPMENT
+      ),
+    })
+  }),
+
 
   checkoutInventory: customJoi.object({
     toolId: ObjectId().required(),
@@ -36,15 +49,15 @@ module.exports = {
         INVENTORY_CATEGORY_CODE.MATERIAL,
         INVENTORY_CATEGORY_CODE.EQUIPMENT
       ),
-    expectedReturnDate: Joi.date().format("DD-MM-YYYY").required(),
+    expectedReturnDate: Joi.date().required(),
     checkoutQuantity: Joi.number().integer().min(1).required(),
-    notes: Joi.string().required().allow(null),
+    notes: Joi.string().required().allow(null, ''),
   }),
 
   returnInventory: customJoi.object({
     checkoutId: ObjectId().required(),
     returnQuantity: Joi.number().integer().min(1).required(),
-    returnDate: Joi.date().format("DD-MM-YYYY").required(),
+    returnDate: Joi.date().required(),
   }),
 
   getInventoryList: customJoi.object({
@@ -80,6 +93,7 @@ module.exports = {
         "category",
         "checkoutDate",
         "returnDate",
+        'checkoutByUserName'
       ),
     sortOrder: Joi.string().required().valid("asc", "desc"),
   }),
