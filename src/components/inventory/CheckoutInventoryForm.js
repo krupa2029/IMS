@@ -59,31 +59,39 @@ function CheckoutInventoryForm(props) {
       <Toast ref={toast} />
       <Dialog
         visible={props.showCheckoutInventoryDialog}
-        style={{ width: "45rem" }}
+        style={{ width: "43rem" }}
         header={"Checkout Inventory"}
         modal
         className="p-fluid"
         onHide={hideDialog}
       >
         <form onSubmit={handleSubmit(onSubmitHandler)}>
-          <div className="formgrid grid">
-            <div className="field col-6">
-              <label htmlFor="name">Name</label>
-              <InputText
-                name="name"
-                value={props.inventory?.name || ""}
-                disabled
-              />
+          <div className="formgrid grid mt-2">
+            <div className="col-6">
+              <div className="field mb-3">
+                <label htmlFor="name">Name</label>
+                <InputText
+                  name="name"
+                  value={props.inventory?.name || ""}
+                  disabled
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="modelNumber">Model</label>
+                <InputText
+                  name="modelNumber"
+                  value={props.inventory?.modelNumber || ""}
+                  disabled
+                />
+              </div>
             </div>
-          </div>
-          <div className="formgrid grid">
-            <div className="field col-6">
-              <label htmlFor="modelNumber">Model</label>
-              <InputText
-                name="modelNumber"
-                value={props.inventory?.modelNumber || ""}
-                disabled
-              />
+            <div className="field col-6 flex justify-content-end">
+              {props.inventory?.image && (
+                <img
+                  src={`${props.inventory.image}`}
+                  className="mr-1"
+                />
+              )}
             </div>
           </div>
 
@@ -223,13 +231,12 @@ function CheckoutInventoryForm(props) {
             />
           </div>
 
-          <div className="formgrid grid flex justify-content-end ">
-            <div>
+          <div className="formgrid grid flex justify-content-end mt-5">
+            <div className="mr-2">
               <Button
                 type="button"
                 label="Cancel"
-                icon="pi pi-times"
-                className="p-button-text"
+                className="p-button-outlined"
                 onClick={hideDialog}
               />
             </div>
@@ -238,8 +245,6 @@ function CheckoutInventoryForm(props) {
                 type="submit"
                 label="Checkout"
                 loading={checkoutInventory.isLoading}
-                icon="pi pi-check"
-                className="p-button-text"
               />
             </div>
           </div>

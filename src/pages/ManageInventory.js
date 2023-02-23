@@ -133,13 +133,13 @@ export default function ManageInventory() {
         <FaEdit
           fontSize="1.4rem"
           data-pr-tooltip="Edit"
-          className="mr-3 custom-target-icon cursor-pointer"
+          className="mr-2 custom-target-icon cursor-pointer"
           data-pr-position="top"
           onClick={() => addEditInventoryHandler(false, true, rowData)}
         />
         <FaRegTrashAlt
           fontSize="1.4rem"
-          className="mr-3 custom-target-icon cursor-pointer"
+          className="mr-2 custom-target-icon cursor-pointer"
           data-pr-tooltip="Delete"
           data-pr-position="top"
           onClick={() => deleteInventoryHandler(false, true, rowData)}
@@ -161,12 +161,11 @@ export default function ManageInventory() {
     return (
       <>
         <span className="p-column-title">Image</span>
-        {/* <img
-          src={`${contextPath}/demo/images/product/${rowData.image}`}
-          alt={rowData.image}
-          className="shadow-2"
-          width="100"
-        /> */}
+        {rowData.image ? (
+          <img src={`${rowData.image}`} width="80" />
+        ) : (
+          ""
+        )}
       </>
     );
   };
@@ -183,37 +182,36 @@ export default function ManageInventory() {
   };
 
   const leftToolbarTemplate = () => {
+    return <p className="text-2xl">Manage Inventory</p>;
+  };
+
+  const rightToolbarTemplate = () => {
     return (
       <React.Fragment>
+        <span className="block mt-2 mr-2 md:mt-0 p-input-icon-left">
+          <i className="pi pi-search" />
+          <InputText
+            type="search"
+            onInput={(e) => setGlobalSearch(e.target.value)}
+            placeholder="Search..."
+          />
+        </span>
         <div className="my-2">
           <Button
             label="New"
             icon="pi pi-plus"
-            className="mr-2"
+            className="mr-2 p-button-outlined"
             onClick={() => addEditInventoryHandler(false, true)}
           />
           <Button
             label="Delete"
             icon="pi pi-trash"
-            className="p-button-danger"
+            className="p-button-outlined p-button-danger"
             onClick={() => deleteSelectedInventoryHandler(false, true, false)}
             disabled={!selectedInventories || !selectedInventories.length}
           />
         </div>
       </React.Fragment>
-    );
-  };
-
-  const rightToolbarTemplate = () => {
-    return (
-      <span className="block mt-2 md:mt-0 p-input-icon-left">
-        <i className="pi pi-search" />
-        <InputText
-          type="search"
-          onInput={(e) => setGlobalSearch(e.target.value)}
-          placeholder="Search..."
-        />
-      </span>
     );
   };
 
@@ -223,7 +221,7 @@ export default function ManageInventory() {
         <div className="card">
           <Toast ref={toast} />
           <Toolbar
-            className="mb-4"
+            className="mb-2 border-bottom-1 border-gray-300"
             left={leftToolbarTemplate}
             right={rightToolbarTemplate}
           ></Toolbar>
@@ -310,32 +308,41 @@ export default function ManageInventory() {
             <Column
               header="Actions"
               body={actionBodyTemplate}
-              headerStyle={{ minWidth: "10rem" }}
+              headerStyle={{ minWidth: "9rem" }}
             ></Column>
           </DataTable>
 
-          <AddEditInventoryForm
-            addEditInventoryHandler={addEditInventoryHandler}
-            showAddEditInventoryDialog={showAddEditInventoryDialog}
-            inventory={inventory}
-          />
-          <CheckoutInventoryForm
-            showCheckoutInventoryDialog={showCheckoutInventoryDialog}
-            checkoutInventoryHandler={checkoutInventoryHandler}
-            inventory={inventory}
-          />
-          <DeleteSingleInventoryPrompt
-            deleteInventoryHandler={deleteInventoryHandler}
-            showDeleteInventoryDialog={showDeleteInventoryDialog}
-            inventory={inventory}
-          />
-          <DeleteSelectedInventoriesPrompt
-            showDeleteSelectedInventoryDialog={
-              showDeleteSelectedInventoryDialog
-            }
-            deleteSelectedInventoryHandler={deleteSelectedInventoryHandler}
-            selectedInventories={selectedInventories}
-          />
+          {showAddEditInventoryDialog && (
+            <AddEditInventoryForm
+              addEditInventoryHandler={addEditInventoryHandler}
+              showAddEditInventoryDialog={showAddEditInventoryDialog}
+              inventory={inventory}
+            />
+          )}
+
+          {showCheckoutInventoryDialog && (
+            <CheckoutInventoryForm
+              showCheckoutInventoryDialog={showCheckoutInventoryDialog}
+              checkoutInventoryHandler={checkoutInventoryHandler}
+              inventory={inventory}
+            />
+          )}
+          {showDeleteInventoryDialog && (
+            <DeleteSingleInventoryPrompt
+              deleteInventoryHandler={deleteInventoryHandler}
+              showDeleteInventoryDialog={showDeleteInventoryDialog}
+              inventory={inventory}
+            />
+          )}
+          {showDeleteSelectedInventoryDialog && (
+            <DeleteSelectedInventoriesPrompt
+              showDeleteSelectedInventoryDialog={
+                showDeleteSelectedInventoryDialog
+              }
+              deleteSelectedInventoryHandler={deleteSelectedInventoryHandler}
+              selectedInventories={selectedInventories}
+            />
+          )}
         </div>
       </div>
     </div>

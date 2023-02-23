@@ -24,7 +24,7 @@ const AppSidebar = () => {
           >
             <i
               className="layout-menuitem-icon
-                pi pi-fw pi-id-card"
+                pi pi-fw pi-list"
             ></i>
             <div className="layout-menuitem-text">Dashboard</div>
             <Ripple />

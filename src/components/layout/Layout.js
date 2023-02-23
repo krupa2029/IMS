@@ -11,9 +11,6 @@ const Layout = (props) => {
         <AppSidebar />
       </div>
       <div className="layout-main-container">
-        <div>
-          <h2>Manage Inventory</h2>
-        </div>
         <div className="layout-main">
           <Outlet/>
         </div>

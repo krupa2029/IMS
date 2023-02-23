@@ -123,12 +123,14 @@ export default function ManageInventory() {
     return (
       <>
         <span className="p-column-title">Image</span>
-        {/* <img
-          src={`${contextPath}/demo/images/product/${rowData.image}`}
-          alt={rowData.image}
-          className="shadow-2"
-          width="100"
-        /> */}
+        {rowData.toolDetails?.image ? (
+          <img
+            src={`${rowData.toolDetails.image}`}
+            width="80"
+          />
+        ) : (
+          ""
+        )}
       </>
     );
   };
@@ -155,9 +157,13 @@ export default function ManageInventory() {
     );
   };
 
+  const leftToolbarTemplate = () => {
+    return <p className="text-2xl">Inventory Checkout Report</p>;
+  };
+
   const rightToolbarTemplate = () => {
     return (
-      <span className="block mt-2 md:mt-0 p-input-icon-left">
+      <span className="block mt-2 my-2 md:mt-0 p-input-icon-left">
         <i className="pi pi-search" />
         <InputText
           type="search"
@@ -173,7 +179,11 @@ export default function ManageInventory() {
       <div className="col-12">
         <div className="card">
           <Toast ref={toast} />
-          <Toolbar className="mb-4" right={rightToolbarTemplate}></Toolbar>
+          <Toolbar
+            className="mb-2 border-bottom-1 border-gray-300"
+            left={leftToolbarTemplate}
+            right={rightToolbarTemplate}
+          ></Toolbar>
           <DataTable
             ref={dt}
             lazy
@@ -214,7 +224,7 @@ export default function ManageInventory() {
             <Column
               header="Image"
               body={imageBodyTemplate}
-              headerStyle={{ minWidth: "8rem" }}
+              headerStyle={{ minWidth: "10rem" }}
             ></Column>
             <Column field="quantity" header="Quantity" sortable></Column>
             <Column field="userName" header="Checkout By" sortable></Column>

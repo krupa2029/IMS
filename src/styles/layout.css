@@ -166,8 +166,8 @@ a {
   color: var(--text-color);
   background-color: #f1f1f1;
   border-radius: 50%;
-  width: 3rem;
-  height: 3rem;
+  width: 2.5rem;
+  height: 2.5rem;
   cursor: pointer;
   -webkit-transition: background-color 0.2s;
   transition: background-color 0.2s;
@@ -521,7 +521,7 @@ a {
   -webkit-box-pack: justify;
       -ms-flex-pack: justify;
           justify-content: space-between;
-  padding: 8rem 1rem 2rem 0rem;
+  padding: 6rem 1rem 2rem 0rem;
   -webkit-transition: margin-left 0.2s;
   transition: margin-left 0.2s;
 }
