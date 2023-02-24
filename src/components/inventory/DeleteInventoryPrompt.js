@@ -104,6 +104,7 @@ export function DeleteSelectedInventoriesPrompt(props) {
       inventoryData: inventoryData,
     };
 
+    console.log(payload);
     await sendRequest(payload);
   };
 

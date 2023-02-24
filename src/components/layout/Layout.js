@@ -17,13 +17,15 @@ const Layout = () => {
     sendRequest();
   }, [sendRequest]);
 
-  if (!isLoading && error) {
-    authCtx.logout();
-  }
-
-  if (!isLoading && !error && data) {
-    authCtx.setUserPermissionData(data, data.roleDetails.permissions);
-  }
+  useEffect(() => {
+    if (!isLoading && error) {
+      authCtx.logout();
+    }
+  
+    if (!isLoading && !error && data) {
+      authCtx.setUserPermissionData(data, data.roleDetails.permissions);
+    }
+  }, [isLoading, error, data]);
 
   return (
     authCtx.permissions && (

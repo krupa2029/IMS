@@ -65,18 +65,18 @@ function useHttp(requestFunction, isLoading = false) {
       dispatch({ type: "SEND" });
       try {
         const responseData = await requestFunction(requestData);
-        if (responseData.data.httpStatus === 200) {
-          dispatch({ type: "SUCCESS", responseData: responseData.data });
+        if (responseData?.data?.httpStatus === 200) {
+          dispatch({ type: "SUCCESS", responseData: responseData?.data });
         } else {
           dispatch({
             type: "ERROR",
             errorMessage:
-              responseData.data.data.message || "Something went wrong!",
+              responseData?.data?.message || "Something went wrong!",
           });
         }
       } catch (error) {
         console.log(error);
-        if(error.response.status === 401){
+        if(error?.response?.status === 401){
           dispatch({
             type: "ERROR",
             errorMessage: "Your session expired. Please login to continue!",

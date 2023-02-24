@@ -2,14 +2,14 @@ import React, { useContext } from "react";
 import Layout from "./components/layout/Layout";
 import CheckoutReport from "./pages/CheckoutReport";
 import LoginPage from "./pages/LoginPage";
+import AuthContext from "./store/auth-context";
+import ManageInventory from "./pages/ManageInventory";
+import NotFoundPage from "./pages/NotFoundPage";
 import {
   createBrowserRouter,
   Navigate,
   RouterProvider,
 } from "react-router-dom";
-import AuthContext from "./store/auth-context";
-import ManageInventory from "./pages/ManageInventory";
-import NotFoundPage from "./pages/NotFoundPage";
 
 function App() {
   const { isLoggedIn } = useContext(AuthContext);

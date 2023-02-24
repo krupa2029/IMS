@@ -387,6 +387,7 @@ function AddEditInventoryForm(props) {
                   mode="advanced"
                   uploadOptions={{ className: "hidden" }}
                   chooseOptions={chooseOptions}
+                  maxFileSize={1000000}
                   onSelect={customImageSelectHandler}
                   onClear={onTemplateClear}
                   customUpload={true}

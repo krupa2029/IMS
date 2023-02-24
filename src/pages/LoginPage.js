@@ -30,11 +30,6 @@ const LoginPage = () => {
     });
   };
 
-  const getFormErrorMessage = (name) => {
-    return (
-      errors[name] && <small className="p-error">{errors[name].message}</small>
-    );
-  };
 
   if (!isLoading && toastData && status) {
     if (status === "success" && data && !error) {
