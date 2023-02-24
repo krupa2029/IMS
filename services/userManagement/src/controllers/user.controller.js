@@ -72,10 +72,40 @@ module.exports = {
     const { email } = req.body;
     const userCollection = db.collection("users");
    
+    const user = await userCollection.findOne({
+      email: email
+    })
+
+    if (!user) {
+      return next(
+        new GeneralResponse(
+          messages.USER_EMAIL_NOT_EXIST,
+          httpStatusCode.HTTP_BAD_REQUEST
+        )
+      );
+    }
+
+    const token = generateToken({
+      userId: user._id,
+      fullName: `${user.firstName} ${user.lastName}`,
+      email: user.email,
+    });
+
+    data = {
+      accessToken: token
+    };
+
+    return next(new GeneralResponse(messages.USER_LOGIN_SUCCESS, httpStatusCode.HTTP_SUCCESS, data));
+  }),
+
+  getUserDetails: catchAsyncError(async (req, res, next) => {
+    const id = req.token.userId;
+    const userCollection = db.collection("users");
+   
     const user = await userCollection
       .aggregate([
         {
-          $match: { email: email },
+          $match: { _id: convertToObjectId(id) },
         },
         {
           $limit: 1,
@@ -116,7 +146,7 @@ module.exports = {
     if (user.length === 0) {
       return next(
         new GeneralResponse(
-          messages.USER_EMAIL_NOT_EXIST,
+          messages.USER_ID_NOT_EXIST,
           httpStatusCode.HTTP_BAD_REQUEST
         )
       );
@@ -128,17 +158,7 @@ module.exports = {
     responseData.roleDetails.permissions = permissionList;
     delete responseData.permissions;
 
-    const token = generateToken({
-      userId: responseData._id,
-      fullName: `${responseData.firstName} ${responseData.lastName}`,
-      email: responseData.email,
-    });
-
-    data = {
-      accessToken: token,
-      userDetails: responseData,
-    };
-
-    return next(new GeneralResponse(messages.USER_LOGIN_SUCCESS, httpStatusCode.HTTP_SUCCESS, data));
+    return next(new GeneralResponse(messages.USER_LOGIN_SUCCESS, httpStatusCode.HTTP_SUCCESS, responseData));
   }),
 };
+

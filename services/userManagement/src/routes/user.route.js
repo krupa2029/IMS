@@ -22,4 +22,10 @@ router.post(
   userController.userLogin
 );
 
+router.get(
+  "/details",
+  authenticate,
+  userController.getUserDetails
+);
+
 module.exports = router;
