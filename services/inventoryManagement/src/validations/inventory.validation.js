@@ -13,7 +13,7 @@ module.exports = {
     id: ObjectId().required().allow(null),
     name: Joi.string().required(),
     description: Joi.string().required(),
-    image: Joi.string().required().allow(null),
+    image: Joi.string().optional().allow(null),
     category: Joi.string()
       .required()
       .valid(

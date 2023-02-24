@@ -41,7 +41,7 @@ module.exports = {
     const inventoryData = {
       name,
       description,
-      image,
+      image : image || null,
       purchaseDate,
       modelNumber,
       locationId: convertToObjectId(locationId),
@@ -108,7 +108,7 @@ module.exports = {
   deleteInventory: catchAsyncError(async (req, res, next) => {
     const { inventoryData } = req.body;
 
-    inventoryData.map(async (item) => {
+    for (const item of inventoryData) {
       const collectionName =
         item.category === INVENTORY_CATEGORY_CODE.MATERIAL
           ? "materials"
@@ -123,7 +123,7 @@ module.exports = {
           },
         }
       );
-    });
+    }
 
     return next(
       new GeneralResponse(
