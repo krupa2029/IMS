@@ -46,6 +46,7 @@ const AppSidebar = () => {
             <Ripple />
           </NavLink>
         </li>
+
         <li>
           <a onClick={handleLogout} tabIndex="0">
             <i className="layout-menuitem-icon pi pi-fw pi-sign-out"></i>

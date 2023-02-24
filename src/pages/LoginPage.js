@@ -1,69 +1,50 @@
-import React, { Fragment, useContext, useRef, useState } from "react";
+import React, { Fragment, useContext, useRef } from "react";
 import { Button } from "primereact/button";
 import { useNavigate } from "react-router-dom";
 import { InputText } from "primereact/inputtext";
 import AuthContext from "../store/auth-context";
 import ApiServices from "../api/ApiServices";
 import { Toast } from "primereact/toast";
-import { useForm } from "react-hook-form";
-import { joiResolver } from "@hookform/resolvers/joi";
-import Joi from "joi";
-
-const fieldValidationSchema = Joi.object({
-  email: Joi.string()
-    .email({ tlds: { allow: false } })
-    .required()
-    .messages({
-      "string.empty": `Email is required!`,
-      "string.email": `Please provide valid email!`,
-    }),
-});
+import { useForm, Controller } from "react-hook-form";
+import useHttp from "../hooks/use-http";
+import { classNames } from "primereact/utils";
 
 const LoginPage = () => {
+  const toast = useRef(null);
   const navigate = useNavigate();
   const authCtx = useContext(AuthContext);
-  const toast = useRef(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const { sendRequest, isLoading, data, error, toastData, status } = useHttp(
+    ApiServices.login,
+    false
+  );
 
   const {
-    register,
+    control,
     handleSubmit,
     formState: { errors },
-  } = useForm({
-    resolver: joiResolver(fieldValidationSchema),
-  });
+  } = useForm();
 
-  const onSubmitHandler = (data) => {
-    setIsLoading(true);
-
-    ApiServices.login({
+  const onSubmitHandler = async (data) => {
+    await sendRequest({
       email: data.email,
-    })
-      .then((responseData) => {
-        setIsLoading(false);
-        if (responseData.data.httpStatus === 200) {
-          if (responseData?.data?.data) {
-            authCtx.login(responseData?.data?.data);
-            navigate("/dashboard");
-          }
-        } else {
-          toast.current.show({
-            severity: "error",
-            summary: responseData?.data?.message,
-            life: 3000,
-          });
-        }
-      })
-      .catch((err) => {
-        setIsLoading(false);
-        console.log(err);
-        toast.current.show({
-          severity: "error",
-          summary: err?.data?.message || "Something went wrong!",
-          life: 3000,
-        });
-      });
+    });
   };
+
+  const getFormErrorMessage = (name) => {
+    return (
+      errors[name] && <small className="p-error">{errors[name].message}</small>
+    );
+  };
+
+  if (!isLoading && toastData && status) {
+    if (status === "success" && data && !error) {
+      authCtx.login(data.accessToken);
+      toast.current.show(toastData);
+      navigate("/dashboard");
+    } else {
+      toast.current.show(toastData);
+    }
+  }
 
   return (
     <Fragment>
@@ -88,14 +69,30 @@ const LoginPage = () => {
                     >
                       Email
                     </label>
-                    <InputText
-                      type="text"
-                      placeholder="Enter email"
-                      className="w-full md:w-30rem"
-                      style={{ padding: "1rem" }}
-                      {...register("email")}
+                    <Controller
+                      name="email"
+                      control={control}
+                      rules={{
+                        required: "Email is required!",
+                        pattern: {
+                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
+                          message:
+                            "Invalid email address. E.g. example@email.com",
+                        },
+                      }}
+                      render={({ field, fieldState }) => (
+                        <InputText
+                          id={field.name}
+                          {...field}
+                          placeholder="Enter email"
+                          className={classNames('w-full md:w-30rem',
+                            {
+                            "p-invalid": fieldState.invalid,
+                          })}
+                        />
+                      )}
                     />
-                    <p className="text-red-500 mt-1">{errors.email?.message}</p>
+                     <p className="text-red-500 mt-1">{errors['email']?.message}</p>
                   </div>
                   <Button
                     label="Login"

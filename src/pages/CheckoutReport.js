@@ -1,17 +1,19 @@
-import { Button } from "primereact/button";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
 import { InputText } from "primereact/inputtext";
 import { Toast } from "primereact/toast";
 import { Toolbar } from "primereact/toolbar";
 import { Tooltip } from "primereact/tooltip";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { CgArrowRightR } from "react-icons/cg";
 import ApiServices from "../api/ApiServices";
 import ReturnInventoryForm from "../components/inventory/ReturnInventoryForm";
+import PERMISSION_CODE from "../constants/enums";
 import useHttp from "../hooks/use-http";
+import AuthContext from "../store/auth-context";
 
 export default function ManageInventory() {
+  const { permissions, userData } = useContext(AuthContext);
   const toast = useRef(null);
   const dt = useRef(null);
   const [inventory, setInventory] = useState(null);
@@ -65,7 +67,11 @@ export default function ManageInventory() {
       const sortBy = getSortBy(lazyState.sortField);
       sendRequest({
         searchText: globalSearch,
-        userId: null,
+        userId: permissions.includes(
+          PERMISSION_CODE.VIEW_ALL_USER_CHECKOUT_REPORT
+        )
+          ? null
+          : userData._id,
         pageSize: lazyState.rows,
         pageIndex: lazyState.page + 1,
         sortField: sortBy,
@@ -124,10 +130,7 @@ export default function ManageInventory() {
       <>
         <span className="p-column-title">Image</span>
         {rowData.toolDetails?.image ? (
-          <img
-            src={`${rowData.toolDetails.image}`}
-            width="80"
-          />
+          <img src={`${rowData.toolDetails.image}`} width="80" />
         ) : (
           ""
         )}
@@ -227,7 +230,13 @@ export default function ManageInventory() {
               headerStyle={{ minWidth: "10rem" }}
             ></Column>
             <Column field="quantity" header="Quantity" sortable></Column>
-            <Column field="userName" header="Checkout By" sortable></Column>
+            
+            {permissions.includes(
+              PERMISSION_CODE.VIEW_ALL_USER_CHECKOUT_REPORT
+            ) && (
+              <Column field="userName" header="Checkout By" sortable></Column>
+            )}
+
             <Column
               field="checkoutDate"
               header="Checkout Date"
@@ -242,11 +251,13 @@ export default function ManageInventory() {
               body={returnDateBodyTemplate}
               headerStyle={{ minWidth: "10rem" }}
             ></Column>
-            <Column
-              header="Return"
-              body={actionBodyTemplate}
-              headerStyle={{ minWidth: "5rem" }}
-            ></Column>
+            {permissions.includes(PERMISSION_CODE.RETURN_INVENTORY) && (
+              <Column
+                header="Return Item"
+                body={actionBodyTemplate}
+                headerStyle={{ minWidth: "5rem" }}
+              ></Column>
+            )}
           </DataTable>
 
           {showReturnInventoryDialog && (

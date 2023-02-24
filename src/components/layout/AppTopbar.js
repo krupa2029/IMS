@@ -3,8 +3,8 @@ import { SiDropbox } from "react-icons/si";
 import AuthContext from "../../store/auth-context";
 
 const AppTopbar = (props) => {
-  const {userDetails} = useContext(AuthContext);
-  const userName = `${userDetails?.firstName} ${userDetails?.lastName}`
+  const {userData} = useContext(AuthContext);
+  const userName = `${userData?.firstName} ${userData?.lastName}`
   return (
     <div className="layout-topbar">
       <a className="layout-topbar-logo">

@@ -4,7 +4,7 @@ import { DataTable } from "primereact/datatable";
 import { InputText } from "primereact/inputtext";
 import { Toast } from "primereact/toast";
 import { Toolbar } from "primereact/toolbar";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { FaEdit, FaRegTrashAlt } from "react-icons/fa";
 import { BsCartCheck, BsCartCheckFill } from "react-icons/bs";
 import {
@@ -16,8 +16,11 @@ import useHttp from "../hooks/use-http";
 import AddEditInventoryForm from "../components/inventory/AddEditInventoryForm";
 import CheckoutInventoryForm from "../components/inventory/CheckoutInventoryForm";
 import { Tooltip } from "primereact/tooltip";
+import AuthContext from "../store/auth-context";
+import PERMISSION_CODE from "../constants/enums";
 
 export default function ManageInventory() {
+  const { permissions } = useContext(AuthContext);
   const toast = useRef(null);
   const dt = useRef(null);
   const [inventory, setInventory] = useState(null);
@@ -130,29 +133,35 @@ export default function ManageInventory() {
     return (
       <div className="flex flex-column md:flex-row md:align-items-center">
         <Tooltip target=".custom-target-icon" />
-        <FaEdit
-          fontSize="1.4rem"
-          data-pr-tooltip="Edit"
-          className="mr-2 custom-target-icon cursor-pointer"
-          data-pr-position="top"
-          onClick={() => addEditInventoryHandler(false, true, rowData)}
-        />
-        <FaRegTrashAlt
-          fontSize="1.4rem"
-          className="mr-2 custom-target-icon cursor-pointer"
-          data-pr-tooltip="Delete"
-          data-pr-position="top"
-          onClick={() => deleteInventoryHandler(false, true, rowData)}
-        />
-        {rowData.canBeCheckedout && rowData.availableQuantity > 0 && (
-          <BsCartCheckFill
-            fontSize="1.55rem"
-            className="custom-target-icon cursor-pointer"
-            data-pr-tooltip="Checkout"
+        {permissions.includes(PERMISSION_CODE.EDIT_INVENTORY) && (
+          <FaEdit
+            fontSize="1.4rem"
+            data-pr-tooltip="Edit"
+            className="mr-2 custom-target-icon cursor-pointer"
             data-pr-position="top"
-            onClick={() => checkoutInventoryHandler(false, true, rowData)}
+            onClick={() => addEditInventoryHandler(false, true, rowData)}
           />
         )}
+        {permissions.includes(PERMISSION_CODE.DELETE_INVENTORY) && (
+          <FaRegTrashAlt
+            fontSize="1.4rem"
+            className="mr-2 custom-target-icon cursor-pointer"
+            data-pr-tooltip="Delete"
+            data-pr-position="top"
+            onClick={() => deleteInventoryHandler(false, true, rowData)}
+          />
+        )}
+        {permissions.includes(PERMISSION_CODE.CHECKOUT_INVENTORY) &&
+          rowData.canBeCheckedout &&
+          rowData.availableQuantity > 0 && (
+            <BsCartCheckFill
+              fontSize="1.55rem"
+              className="custom-target-icon cursor-pointer"
+              data-pr-tooltip="Checkout"
+              data-pr-position="top"
+              onClick={() => checkoutInventoryHandler(false, true, rowData)}
+            />
+          )}
       </div>
     );
   };
@@ -161,11 +170,7 @@ export default function ManageInventory() {
     return (
       <>
         <span className="p-column-title">Image</span>
-        {rowData.image ? (
-          <img src={`${rowData.image}`} width="80" />
-        ) : (
-          ""
-        )}
+        {rowData.image ? <img src={`${rowData.image}`} width="80" /> : ""}
       </>
     );
   };
@@ -188,7 +193,7 @@ export default function ManageInventory() {
   const rightToolbarTemplate = () => {
     return (
       <React.Fragment>
-        <span className="block mt-2 mr-2 md:mt-0 p-input-icon-left">
+        <span className="block my-2 p-input-icon-left">
           <i className="pi pi-search" />
           <InputText
             type="search"
@@ -196,20 +201,24 @@ export default function ManageInventory() {
             placeholder="Search..."
           />
         </span>
-        <div className="my-2">
-          <Button
-            label="New"
-            icon="pi pi-plus"
-            className="mr-2 p-button-outlined"
-            onClick={() => addEditInventoryHandler(false, true)}
-          />
-          <Button
-            label="Delete"
-            icon="pi pi-trash"
-            className="p-button-outlined p-button-danger"
-            onClick={() => deleteSelectedInventoryHandler(false, true, false)}
-            disabled={!selectedInventories || !selectedInventories.length}
-          />
+        <div className="my-2 ml-2">
+          {permissions.includes(PERMISSION_CODE.ADD_INVENTORY) && (
+            <Button
+              label="New"
+              icon="pi pi-plus"
+              className="mr-2 p-button-outlined"
+              onClick={() => addEditInventoryHandler(false, true)}
+            />
+          )}
+          {permissions.includes(PERMISSION_CODE.DELETE_INVENTORY) && (
+            <Button
+              label="Delete"
+              icon="pi pi-trash"
+              className="p-button-outlined p-button-danger"
+              onClick={() => deleteSelectedInventoryHandler(false, true, false)}
+              disabled={!selectedInventories || !selectedInventories.length}
+            />
+          )}
         </div>
       </React.Fragment>
     );
@@ -247,10 +256,12 @@ export default function ManageInventory() {
             currentPageReportTemplate="Showing {first} to {last} of {totalRecords} products"
             emptyMessage="No products found."
           >
-            <Column
-              selectionMode="multiple"
-              headerStyle={{ width: "4rem" }}
-            ></Column>
+            {permissions.includes(PERMISSION_CODE.DELETE_INVENTORY) && (
+              <Column
+                selectionMode="multiple"
+                headerStyle={{ width: "4rem" }}
+              ></Column>
+            )}
             <Column
               field="name"
               header="Name"
@@ -274,12 +285,16 @@ export default function ManageInventory() {
               sortable
               headerStyle={{ minWidth: "8rem" }}
             ></Column>
-            <Column
-              field="totalQuantity"
-              header="Total Quantity"
-              sortable
-              headerStyle={{ minWidth: "8rem" }}
-            ></Column>
+            {permissions.includes(
+              PERMISSION_CODE.VIEW_ALL_MANAGE_INVENTORY_COLUMN
+            ) && (
+              <Column
+                field="totalQuantity"
+                header="Total Quantity"
+                sortable
+                headerStyle={{ minWidth: "8rem" }}
+              ></Column>
+            )}
             <Column
               field="category"
               header="Category"
@@ -298,18 +313,27 @@ export default function ManageInventory() {
               sortable
               headerStyle={{ minWidth: "10rem" }}
             ></Column>
-            <Column
-              field="purchaseDate"
-              header="Purchase Date"
-              sortable
-              body={purchaseDateBodyTemplate}
-              headerStyle={{ minWidth: "10rem" }}
-            ></Column>
-            <Column
-              header="Actions"
-              body={actionBodyTemplate}
-              headerStyle={{ minWidth: "9rem" }}
-            ></Column>
+            {permissions.includes(
+              PERMISSION_CODE.VIEW_ALL_MANAGE_INVENTORY_COLUMN
+            ) && (
+              <Column
+                field="purchaseDate"
+                header="Purchase Date"
+                sortable
+                body={purchaseDateBodyTemplate}
+                headerStyle={{ minWidth: "10rem" }}
+              ></Column>
+            )}
+
+            {(permissions.includes(PERMISSION_CODE.EDIT_INVENTORY) ||
+              permissions.includes(PERMISSION_CODE.DELETE_INVENTORY) ||
+              permissions.includes(PERMISSION_CODE.CHECKOUT_INVENTORY)) && (
+              <Column
+                header="Actions"
+                body={actionBodyTemplate}
+                headerStyle={{ minWidth: "9rem" }}
+              ></Column>
+            )}
           </DataTable>
 
           {showAddEditInventoryDialog && (

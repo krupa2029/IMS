@@ -2,37 +2,47 @@ import React, { useState } from "react";
 import { useCallback } from "react";
 
 const AuthContext = React.createContext({
-  userData: "",
+  token: null, 
+  userData: null,
+  permissions: null,
   isLoggedIn: false,
+  login: (token) => {},
   logout: () => {},
+  setUserPermissionData: (permissionData) => {},
 });
 
 export const AuthContextProvider = (props) => {
-  const storedUserData = localStorage.getItem("userData");
-  const userDataJson = JSON.parse(storedUserData);
+  const storedToken = localStorage.getItem("accessToken");
 
-  const [userData, setUserData] = useState(userDataJson);
+  const [token, setToken] = useState(storedToken);
+  const [userData, setUserData] = useState(null);
+  const [permissions, setPermissions] = useState(null);
 
-  const token = userData?.accessToken;
-
-  const userIsLoggedIn = !!token;
-
-  const loginHandler = (userData) => {
-    setUserData(userData);
-    localStorage.setItem("userData", JSON.stringify(userData));
+  const userIsLoggedIn = !!token; 
+  
+  const loginHandler = (token) => {
+    localStorage.setItem("accessToken", token);
+    setToken(token);
   };
 
   const logoutHandler = useCallback(() => {
-    localStorage.removeItem("userData");
-    setUserData(null);
+    localStorage.removeItem("accessToken");
+    setToken(null);
   },[]);
+
+  const userPermissionHandler = (userDetails, permissionData) => {
+    setUserData(userDetails)
+    setPermissions(permissionData);
+  }
 
   const contextValue = {
     token: token, 
-    userDetails: userData?.userDetails,
+    userData: userData,
+    permissions: permissions,
     isLoggedIn: userIsLoggedIn,
     login: loginHandler,
-    logout: logoutHandler
+    logout: logoutHandler,
+    setUserPermissionData: userPermissionHandler,
   };
 
   return (
